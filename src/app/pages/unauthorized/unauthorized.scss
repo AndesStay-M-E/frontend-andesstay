@@ -1,0 +1,41 @@
+.unauthorized-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f1f5f9;
+  font-family: Arial, sans-serif;
+  text-align: center;
+
+  section {
+    max-width: 480px;
+    padding: 40px;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
+  }
+
+  span {
+    color: #dc2626;
+    font-size: 64px;
+    font-weight: 800;
+  }
+
+  h1 {
+    color: #0f172a;
+  }
+
+  p {
+    color: #64748b;
+  }
+
+  a {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 11px 18px;
+    border-radius: 8px;
+    background: #0f766e;
+    color: white;
+    text-decoration: none;
+  }
+}

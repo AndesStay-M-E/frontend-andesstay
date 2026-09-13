@@ -1,0 +1,93 @@
+<header class="header">
+  <div>
+    <h1>AndesStay</h1>
+    <p>Panel de operaciones</p>
+  </div>
+
+  <button type="button" (click)="logout()">Cerrar sesión</button>
+</header>
+
+<main class="dashboard">
+  <section class="welcome">
+    <p>Sesión iniciada correctamente</p>
+    <h2>Bienvenido, {{ name }}</h2>
+    <span>{{ username }}</span>
+
+    <div class="roles">
+      @for (role of roles; track role) {
+        <span>{{ role }}</span>
+      }
+    </div>
+  </section>
+
+  <section class="menu">
+    <h3>Módulos disponibles</h3>
+
+    <div class="menu-grid">
+      @if (hasAnyRole('ADMIN', 'OPERADOR', 'CLIENTE')) {
+        <a routerLink="/reservations">
+          <strong>Reservas</strong>
+          <span>Crear, consultar y administrar reservas.</span>
+        </a>
+      }
+
+      @if (hasAnyRole('ADMIN', 'OPERADOR')) {
+        <a routerLink="/catalog">
+          <strong>Catálogo</strong>
+          <span>Habitaciones, cabañas y disponibilidad.</span>
+        </a>
+      }
+
+      @if (hasAnyRole('ADMIN')) {
+        <a routerLink="/reports">
+          <strong>Reportería</strong>
+          <span>Ocupación, tiempos de ciclo e indicadores.</span>
+        </a>
+      }
+
+      @if (hasAnyRole('ADMIN', 'AUDITOR')) {
+        <a routerLink="/audit">
+          <strong>Auditoría</strong>
+          <span>Timeline y trazabilidad de las reservas.</span>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="api-validation">
+    <h3>Validación de seguridad del BFF</h3>
+
+    <div class="validation-actions">
+      <button type="button" (click)="validateToken()">
+        Validar JWT
+      </button>
+
+      <button type="button" (click)="validateAdminAccess()">
+        Probar acceso ADMIN
+      </button>
+    </div>
+
+    @if (apiStatus) {
+      <div
+        class="api-result"
+        [class.success]="apiStatus === 200"
+        [class.denied]="apiStatus !== 200"
+      >
+        <strong>HTTP {{ apiStatus }}</strong>
+        <span>{{ apiMessage }}</span>
+      </div>
+    }
+
+    @if (apiUser) {
+      <div class="token-data">
+        <p><strong>Usuario:</strong> {{ apiUser.username }}</p>
+        <p><strong>Roles:</strong> {{ apiUser.roles.join(', ') }}</p>
+        <p><strong>Issuer:</strong> {{ apiUser.issuer }}</p>
+        <p>
+          <strong>Audience:</strong>
+          {{ apiUser.audience.join(', ') }}
+        </p>
+      </div>
+    }
+  </section>
+</main>
