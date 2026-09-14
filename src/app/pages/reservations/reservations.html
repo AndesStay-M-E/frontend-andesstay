@@ -1,1 +1,215 @@
-<p>reservations works!</p>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Gestión de reservas</h1>
+      <p>Crea y administra las reservas de AndesStay.</p>
+    </div>
+
+    <a routerLink="/dashboard" class="back-button">
+      Volver al dashboard
+    </a>
+  </header>
+
+  <main class="content">
+    <section class="card form-card">
+      <div class="section-heading">
+        <div>
+          <h2>Nueva reserva</h2>
+          <p>Ingresa los datos de la estadía.</p>
+        </div>
+      </div>
+
+      <form (ngSubmit)="createReservation()" #reservationForm="ngForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="accommodationId">ID del alojamiento</label>
+            <input
+              id="accommodationId"
+              name="accommodationId"
+              type="number"
+              min="1"
+              [(ngModel)]="form.accommodationId"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="guests">Cantidad de huéspedes</label>
+            <input
+              id="guests"
+              name="guests"
+              type="number"
+              min="1"
+              [(ngModel)]="form.guests"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="checkInDate">Fecha de entrada</label>
+            <input
+              id="checkInDate"
+              name="checkInDate"
+              type="date"
+              [min]="today"
+              [(ngModel)]="form.checkInDate"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="checkOutDate">Fecha de salida</label>
+            <input
+              id="checkOutDate"
+              name="checkOutDate"
+              type="date"
+              [min]="form.checkInDate || today"
+              [(ngModel)]="form.checkOutDate"
+              required
+            />
+          </div>
+
+          <div class="field field-wide">
+            <label for="totalAmount">Monto total</label>
+            <input
+              id="totalAmount"
+              name="totalAmount"
+              type="number"
+              min="1"
+              step="1"
+              [(ngModel)]="form.totalAmount"
+              required
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="saving || reservationForm.invalid"
+        >
+          {{ saving ? 'Guardando...' : 'Crear reserva' }}
+        </button>
+      </form>
+    </section>
+
+    <div *ngIf="message" class="alert success">
+      {{ message }}
+    </div>
+
+    <div *ngIf="errorMessage" class="alert error">
+      {{ errorMessage }}
+    </div>
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>{{ isAdmin ? 'Todas las reservas' : 'Mis reservas' }}</h2>
+          <p *ngIf="isAdmin">
+            Vista administrativa de las reservas registradas.
+          </p>
+          <p *ngIf="!isAdmin">
+            Consulta el estado de tus reservas.
+          </p>
+        </div>
+
+        <span class="role-badge">
+          {{ isAdmin ? 'ADMIN' : 'CLIENTE' }}
+        </span>
+      </div>
+
+      <p *ngIf="loading" class="state-message">
+        Cargando reservas...
+      </p>
+
+      <p
+        *ngIf="!loading && reservations.length === 0"
+        class="state-message"
+      >
+        No existen reservas registradas.
+      </p>
+
+      <div
+        *ngIf="!loading && reservations.length > 0"
+        class="reservations-grid"
+      >
+        <article
+          *ngFor="let reservation of reservations"
+          class="reservation-card"
+        >
+          <div class="reservation-top">
+            <div>
+              <span class="reservation-number">
+                Reserva #{{ reservation.id }}
+              </span>
+              <h3>Alojamiento {{ reservation.accommodationId }}</h3>
+            </div>
+
+            <span
+              [class]="'status status-' +
+                reservation.status.toLowerCase()"
+            >
+              {{ statusLabel(reservation.status) }}
+            </span>
+          </div>
+
+          <dl>
+            <div *ngIf="isAdmin">
+              <dt>Usuario</dt>
+              <dd>{{ reservation.userEmail }}</dd>
+            </div>
+
+            <div>
+              <dt>Entrada</dt>
+              <dd>{{ reservation.checkInDate | date:'dd/MM/yyyy' }}</dd>
+            </div>
+
+            <div>
+              <dt>Salida</dt>
+              <dd>{{ reservation.checkOutDate | date:'dd/MM/yyyy' }}</dd>
+            </div>
+
+            <div>
+              <dt>Huéspedes</dt>
+              <dd>{{ reservation.guests }}</dd>
+            </div>
+
+            <div>
+              <dt>Total</dt>
+              <dd>
+                {{ reservation.totalAmount |
+                  currency:'CLP':'symbol-narrow':'1.0-0' }}
+              </dd>
+            </div>
+          </dl>
+
+          <div class="actions">
+            <button
+              *ngIf="
+                isAdmin &&
+                reservation.status === 'PENDING'
+              "
+              type="button"
+              class="confirm-button"
+              (click)="confirmReservation(reservation.id)"
+            >
+              Confirmar
+            </button>
+
+            <button
+              *ngIf="
+                reservation.status === 'PENDING' ||
+                reservation.status === 'CONFIRMED'
+              "
+              type="button"
+              class="cancel-button"
+              (click)="cancelReservation(reservation.id)"
+            >
+              Cancelar
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</div>
