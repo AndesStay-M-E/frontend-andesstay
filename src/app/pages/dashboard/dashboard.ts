@@ -1,3 +1,5 @@
+import { environment } from '../../../environments/environment';
+
 import {
   ChangeDetectorRef,
   Component,
@@ -27,6 +29,8 @@ export class Dashboard implements OnInit {
   name = '';
   username = '';
   roles: string[] = [];
+  scopes: string[] = [];
+  tokenError = '';
 
   apiUser?: AuthenticatedUserResponse;
   apiMessage = '';
@@ -54,6 +58,7 @@ export class Dashboard implements OnInit {
 
     const claims = activeAccount.idTokenClaims as AndesStayClaims | undefined;
     this.roles = claims?.roles ?? [];
+    this.loadAccessTokenScopes();
   }
 
   hasAnyRole(...allowedRoles: string[]): boolean {
@@ -101,6 +106,39 @@ export class Dashboard implements OnInit {
       },
     });
   }
+
+  private loadAccessTokenScopes(): void {
+  const account =
+    this.authService.instance.getActiveAccount() ??
+    this.authService.instance.getAllAccounts()[0];
+
+  if (!account) {
+    this.tokenError = 'No existe una cuenta activa.';
+    return;
+  }
+
+  this.authService
+    .acquireTokenSilent({
+      account,
+      scopes: [environment.azure.apiScope],
+    })
+    .subscribe({
+      next: (result) => {
+        this.scopes = result.scopes;
+        this.tokenError = '';
+        this.changeDetector.detectChanges();
+      },
+      error: (error: unknown) => {
+        console.error('No fue posible obtener el access token:', error);
+
+        this.scopes = [];
+        this.tokenError =
+          'No fue posible obtener los scopes del token.';
+
+        this.changeDetector.detectChanges();
+      },
+    });
+}
 
   logout(): void {
     this.authService

@@ -197,3 +197,20 @@
     color: #334155;
   }
 }
+
+.token-claims {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: #f4f7fb;
+  color: #183153;
+
+  p {
+    margin: 0.35rem 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.token-error {
+  color: #b42318;
+}

@@ -18,6 +18,28 @@
         <span>{{ role }}</span>
       }
     </div>
+
+    <div class="token-claims">
+  <p>
+    <strong>Roles del token:</strong>
+    {{ roles.length > 0 ? roles.join(', ') : 'Sin roles asignados' }}
+  </p>
+
+  <p>
+    <strong>Scopes concedidos:</strong>
+    {{
+      scopes.length > 0
+        ? scopes.join(', ')
+        : 'Esperando access token...'
+    }}
+  </p>
+
+  @if (tokenError) {
+    <p class="token-error">
+      {{ tokenError }}
+    </p>
+  }
+</div>
   </section>
 
   <section class="menu">
