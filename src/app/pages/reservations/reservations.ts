@@ -1,9 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
+import {
+  finalize,
+  TimeoutError,
+  timeout,
+} from 'rxjs';
 
 import {
   BffApiService,
@@ -24,6 +33,7 @@ import {
 })
 export class Reservations implements OnInit {
   private readonly bffApi = inject(BffApiService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   reservations: ReservationResponse[] = [];
   isAdmin = false;
@@ -51,19 +61,31 @@ export class Reservations implements OnInit {
 
     this.bffApi
       .createReservation(this.form)
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(
+  timeout(15000),
+  finalize(() => {
+    this.saving = false;
+    this.changeDetector.detectChanges();
+  }),
+)
       .subscribe({
         next: () => {
           this.message = 'Reserva creada correctamente.';
           this.form = this.emptyForm();
           this.loadReservations();
         },
-        error: (error: HttpErrorResponse) => {
-          this.errorMessage = this.getErrorMessage(
-            error,
-            'No fue posible crear la reserva.',
-          );
-        },
+        error: (error: unknown) => {
+  if (error instanceof TimeoutError) {
+    this.errorMessage =
+      'El servidor tardó demasiado en responder. Verifica que el BFF y el microservicio de reservas estén ejecutándose.';
+    return;
+  }
+
+  this.errorMessage = this.getErrorMessage(
+    error as HttpErrorResponse,
+    'No fue posible crear la reserva.',
+  );
+},
       });
   }
 
