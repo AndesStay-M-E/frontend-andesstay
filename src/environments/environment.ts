@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
 
-  apiUrl: 'http://localhost:8080/api',
+  apiUrl: 'https://8hk6chhmzg.execute-api.us-east-1.amazonaws.com/api',
 
   azure: {
     clientId: 'c6126dbb-653d-40ae-9c1f-731a504108b6',
