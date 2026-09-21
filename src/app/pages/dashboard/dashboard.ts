@@ -15,9 +15,9 @@ import {
   BffApiService,
 } from '../../services/bff-api.service';
 
-interface AndesStayClaims {
-  roles?: string[];
-}
+import {
+  decodeAccessToken,
+} from '../../auth/token-claims';
 
 @Component({
   selector: 'app-dashboard',
@@ -56,13 +56,13 @@ export class Dashboard implements OnInit {
     this.name = activeAccount.name ?? 'Usuario AndesStay';
     this.username = activeAccount.username;
 
-    const claims = activeAccount.idTokenClaims as AndesStayClaims | undefined;
-    this.roles = claims?.roles ?? [];
-    this.loadAccessTokenScopes();
+    this.loadAccessTokenClaims();
   }
 
   hasAnyRole(...allowedRoles: string[]): boolean {
-    return allowedRoles.some((role) => this.roles.includes(role));
+    return allowedRoles.some((role) =>
+      this.roles.includes(role),
+    );
   }
 
   validateToken(): void {
@@ -73,30 +73,40 @@ export class Dashboard implements OnInit {
       next: (response: AuthenticatedUserResponse) => {
         this.apiUser = response;
         this.apiStatus = 200;
-        this.apiMessage = 'JWT válido: acceso autorizado por el BFF.';
+        this.apiMessage =
+          'JWT válido: acceso autorizado por el BFF.';
+
         this.changeDetector.detectChanges();
       },
+
       error: (error) => {
         this.apiUser = undefined;
         this.apiStatus = error.status;
-        this.apiMessage = 'El BFF rechazó la solicitud.';
+        this.apiMessage =
+          'El BFF rechazó la solicitud.';
+
         this.changeDetector.detectChanges();
       },
     });
   }
 
   validateAdminAccess(): void {
-    this.apiMessage = 'Comprobando rol ADMIN...';
+    this.apiMessage =
+      'Comprobando rol ADMIN...';
+
     this.apiStatus = undefined;
 
     this.bffApi.getAdminStatus().subscribe({
       next: (response: AdminResponse) => {
         this.apiStatus = 200;
         this.apiMessage = response.message;
+
         this.changeDetector.detectChanges();
       },
+
       error: (error) => {
         this.apiStatus = error.status;
+
         this.apiMessage =
           error.status === 403
             ? 'Acceso rechazado: el usuario no posee el rol ADMIN.'
@@ -107,43 +117,62 @@ export class Dashboard implements OnInit {
     });
   }
 
-  private loadAccessTokenScopes(): void {
-  const account =
-    this.authService.instance.getActiveAccount() ??
-    this.authService.instance.getAllAccounts()[0];
+  private loadAccessTokenClaims(): void {
+    const account =
+      this.authService.instance.getActiveAccount() ??
+      this.authService.instance.getAllAccounts()[0];
 
-  if (!account) {
-    this.tokenError = 'No existe una cuenta activa.';
-    return;
+    if (!account) {
+      this.tokenError =
+        'No existe una cuenta activa.';
+      return;
+    }
+
+    this.authService
+      .acquireTokenSilent({
+        account,
+        scopes: [environment.azure.apiScope],
+      })
+      .subscribe({
+        next: (result) => {
+          const claims =
+            decodeAccessToken(result.accessToken);
+
+          this.roles =
+            claims?.roles ?? [];
+
+          this.scopes =
+            claims?.scp
+              ? claims.scp.split(' ')
+              : [];
+
+          this.tokenError = '';
+
+          this.changeDetector.detectChanges();
+        },
+
+        error: (error: unknown) => {
+          console.error(
+            'No fue posible obtener el access token:',
+            error,
+          );
+
+          this.roles = [];
+          this.scopes = [];
+
+          this.tokenError =
+            'No fue posible leer los claims del access token.';
+
+          this.changeDetector.detectChanges();
+        },
+      });
   }
-
-  this.authService
-    .acquireTokenSilent({
-      account,
-      scopes: [environment.azure.apiScope],
-    })
-    .subscribe({
-      next: (result) => {
-        this.scopes = result.scopes;
-        this.tokenError = '';
-        this.changeDetector.detectChanges();
-      },
-      error: (error: unknown) => {
-        console.error('No fue posible obtener el access token:', error);
-
-        this.scopes = [];
-        this.tokenError =
-          'No fue posible obtener los scopes del token.';
-
-        this.changeDetector.detectChanges();
-      },
-    });
-}
 
   logout(): void {
     this.authService
       .logoutRedirect({
-        postLogoutRedirectUri: window.location.origin,
+        postLogoutRedirectUri:
+          window.location.origin,
       })
       .subscribe();
   }

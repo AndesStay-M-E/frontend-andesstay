@@ -1,10 +1,23 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+
+import {
+  CanActivateFn,
+  Router,
+} from '@angular/router';
+
 import { MsalService } from '@azure/msal-angular';
 
-interface AndesStayClaims {
-  roles?: string[];
-}
+import {
+  catchError,
+  map,
+  of,
+} from 'rxjs';
+
+import { environment } from '../../environments/environment';
+
+import {
+  decodeAccessToken,
+} from './token-claims';
 
 export const roleGuard: CanActivateFn = (route) => {
   const authService = inject(MsalService);
@@ -18,15 +31,51 @@ export const roleGuard: CanActivateFn = (route) => {
     return router.createUrlTree(['/login']);
   }
 
-  const claims = account.idTokenClaims as AndesStayClaims | undefined;
-  const userRoles = claims?.roles ?? [];
-  const requiredRoles = route.data['roles'] as string[];
+  authService.instance.setActiveAccount(account);
 
-  const authorized = requiredRoles.some((role) =>
-    userRoles.includes(role),
-  );
+  const requiredRoles =
+    route.data['roles'] as string[] | undefined;
 
-  return authorized
-    ? true
-    : router.createUrlTree(['/unauthorized']);
+  if (!requiredRoles || requiredRoles.length === 0) {
+    return true;
+  }
+
+  return authService
+    .acquireTokenSilent({
+      account,
+      scopes: [environment.azure.apiScope],
+    })
+    .pipe(
+      map((result) => {
+        const claims =
+          decodeAccessToken(result.accessToken);
+
+        const userRoles =
+          claims?.roles ?? [];
+
+        const authorized =
+          requiredRoles.some((role) =>
+            userRoles.includes(role),
+          );
+
+        return authorized
+          ? true
+          : router.createUrlTree([
+              '/unauthorized',
+            ]);
+      }),
+
+      catchError((error) => {
+        console.error(
+          'No fue posible validar el rol del access token:',
+          error,
+        );
+
+        return of(
+          router.createUrlTree([
+            '/unauthorized',
+          ]),
+        );
+      }),
+    );
 };
