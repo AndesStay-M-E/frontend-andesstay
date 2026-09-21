@@ -30,7 +30,9 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -52,6 +54,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "eduardo": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.eduardo.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -64,6 +77,9 @@
             },
             "development": {
               "buildTarget": "frontend-andesstay:build:development"
+            },
+            "eduardo": {
+              "buildTarget": "frontend-andesstay:build:eduardo"
             }
           },
           "defaultConfiguration": "development"
