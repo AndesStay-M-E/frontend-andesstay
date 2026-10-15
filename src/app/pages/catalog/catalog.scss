@@ -1,0 +1,78 @@
+.checkbox-field {
+  align-content: end;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    font-weight: 600;
+  }
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: #07877f;
+  }
+}
+
+.accommodations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.accommodation-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid #cfdae5;
+  border-radius: 14px;
+
+  &.inactive {
+    background: #f8fafb;
+    opacity: 0.75;
+  }
+
+  h3 {
+    margin: 4px 0 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 6px 0 8px;
+
+    dt {
+      color: #5f718a;
+      font-size: 13px;
+    }
+
+    dd {
+      margin: 2px 0 0;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+.accommodation-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.location {
+  font-weight: 600;
+}
+
+.description {
+  font-size: 14px;
+}

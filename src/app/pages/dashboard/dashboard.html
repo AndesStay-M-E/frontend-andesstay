@@ -56,14 +56,14 @@
       @if (hasAnyRole('ADMIN', 'OPERADOR')) {
         <a routerLink="/catalog">
           <strong>Catálogo</strong>
-          <span>Habitaciones, cabañas y disponibilidad.</span>
+          <span>Alojamientos y tickets de limpieza.</span>
         </a>
       }
 
       @if (hasAnyRole('ADMIN')) {
         <a routerLink="/reports">
           <strong>Reportería</strong>
-          <span>Ocupación, tiempos de ciclo e indicadores.</span>
+          <span>Vouchers emitidos e indicadores.</span>
         </a>
       }
 

@@ -1,0 +1,84 @@
+.status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  color: #10233f;
+  background: white;
+  border: 1px solid #cfdae5;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+
+  &:hover,
+  &.selected {
+    border-color: #07877f;
+    box-shadow: 0 0 0 2px rgb(7 135 127 / 14%);
+  }
+}
+
+.limit-field {
+  min-width: 110px !important;
+}
+
+.transition {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: #607088;
+}
+
+.trace {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.timeline {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 0 0 0 28px;
+  list-style: none;
+
+  &::before {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 7px;
+    width: 2px;
+    content: '';
+    background: #cfdae5;
+  }
+
+  li {
+    position: relative;
+  }
+
+  p {
+    margin: 6px 0 0;
+  }
+}
+
+.timeline-dot {
+  position: absolute;
+  top: 6px;
+  left: -27px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #cfdae5;
+}

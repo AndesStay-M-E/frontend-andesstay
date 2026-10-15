@@ -22,15 +22,30 @@
       <form (ngSubmit)="createReservation()" #reservationForm="ngForm">
         <div class="form-grid">
           <div class="field">
-            <label for="accommodationId">ID del alojamiento</label>
-            <input
-              id="accommodationId"
-              name="accommodationId"
-              type="number"
-              min="1"
-              [(ngModel)]="form.accommodationId"
-              required
-            />
+            <label for="accommodationId">Alojamiento</label>
+            @if (accommodations().length > 0) {
+              <select
+                id="accommodationId"
+                name="accommodationId"
+                [(ngModel)]="form.accommodationId"
+                required
+              >
+                @for (item of accommodations(); track item.id) {
+                  <option [ngValue]="item.id">
+                    {{ item.name }} · {{ item.location }} ({{ item.capacity }} pers.)
+                  </option>
+                }
+              </select>
+            } @else {
+              <input
+                id="accommodationId"
+                name="accommodationId"
+                type="number"
+                min="1"
+                [(ngModel)]="form.accommodationId"
+                required
+              />
+            }
           </div>
 
           <div class="field">
@@ -142,7 +157,7 @@
               <span class="reservation-number">
                 Reserva #{{ reservation.id }}
               </span>
-              <h3>Alojamiento {{ reservation.accommodationId }}</h3>
+              <h3>{{ accommodationName(reservation.accommodationId) }}</h3>
             </div>
 
             <span

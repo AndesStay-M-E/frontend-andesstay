@@ -4,6 +4,7 @@ import {
   Component,
   OnInit,
   inject,
+  signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,6 +21,10 @@ import {
   ReservationResponse,
   ReservationStatus,
 } from '../../services/bff-api.service';
+import {
+  Accommodation,
+  CatalogApiService,
+} from '../../services/catalog-api.service';
 
 @Component({
   selector: 'app-reservations',
@@ -33,6 +38,10 @@ import {
 })
 export class Reservations implements OnInit {
   private readonly bffApi = inject(BffApiService);
+  private readonly catalogApi = inject(CatalogApiService);
+
+  /** Alojamientos activos del catálogo (si el catálogo no responde, queda vacío). */
+  readonly accommodations = signal<Accommodation[]>([]);
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   reservations: ReservationResponse[] = [];
@@ -48,6 +57,29 @@ export class Reservations implements OnInit {
 
   ngOnInit(): void {
     this.loadUserAndReservations();
+    this.loadAccommodations();
+  }
+
+  accommodationName(id: number): string {
+    const found = this.accommodations().find((a) => a.id === id);
+    return found ? found.name : `Alojamiento ${id}`;
+  }
+
+  private loadAccommodations(): void {
+    this.catalogApi.getAccommodations(true).subscribe({
+      next: (accommodations) => {
+        this.accommodations.set(accommodations);
+
+        if (
+          accommodations.length > 0 &&
+          !accommodations.some((a) => a.id === this.form.accommodationId)
+        ) {
+          this.form.accommodationId = accommodations[0].id;
+        }
+      },
+      // Sin catálogo se puede seguir ingresando el ID a mano.
+      error: () => this.accommodations.set([]),
+    });
   }
 
   createReservation(): void {

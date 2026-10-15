@@ -1,1 +1,179 @@
-<p>audit works!</p>
+<div class="page as-page">
+  <header class="page-header">
+    <div>
+      <h1>Auditoría</h1>
+      <p>Trazabilidad de cada cambio de estado de las reservas.</p>
+    </div>
+
+    <a routerLink="/dashboard" class="back-button">Volver al dashboard</a>
+  </header>
+
+  <main class="content">
+    @if (errorMessage()) {
+      <div class="alert error" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Resumen</h2>
+          <p>Los eventos llegan desde RabbitMQ (exchange andesstay.events).</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="refresh()">Actualizar</button>
+      </div>
+
+      @if (summary(); as s) {
+        <div class="stats">
+          <div class="stat">
+            <span>Eventos registrados</span>
+            <strong>{{ s.totalEvents }}</strong>
+            <small>{{ s.lastEventAt ? 'último ' + (s.lastEventAt | date: 'dd/MM HH:mm') : 'sin eventos' }}</small>
+          </div>
+          <div class="stat">
+            <span>Reservas auditadas</span>
+            <strong>{{ s.reservations }}</strong>
+            <small>con al menos un evento</small>
+          </div>
+        </div>
+
+        <div class="status-chips" aria-label="Eventos por estado">
+          @for (status of statuses; track status) {
+            <button type="button" class="status-chip" (click)="filterByStatus(status)" [class.selected]="filters.status === status">
+              <span class="badge" [ngClass]="statusBadge(status)">{{ statusLabel(status) }}</span>
+              <strong>{{ s.eventsByStatus[status] ?? 0 }}</strong>
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="state-message">Cargando resumen...</p>
+      }
+    </section>
+
+    @if (timelineReservation()) {
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Línea de tiempo · reserva #{{ timelineReservation() }}</h2>
+            <p>Todos los cambios de estado en orden cronológico.</p>
+          </div>
+          <button type="button" class="secondary-button" (click)="closeTimeline()">Cerrar</button>
+        </div>
+
+        @if (loadingTimeline()) {
+          <p class="state-message">Cargando línea de tiempo...</p>
+        } @else {
+          <ol class="timeline">
+            @for (event of timeline(); track event.id) {
+              <li>
+                <span class="timeline-dot" [ngClass]="statusBadge(event.newStatus)"></span>
+                <div>
+                  <span class="badge" [ngClass]="statusBadge(event.newStatus)">{{ statusLabel(event.newStatus) }}</span>
+                  <p>
+                    <strong>{{ event.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</strong>
+                    @if (event.previousStatus) {
+                      · desde {{ statusLabel(event.previousStatus) }}
+                    } @else {
+                      · reserva creada
+                    }
+                  </p>
+                  <p class="muted">
+                    {{ event.userEmail }}
+                    @if (event.traceId) {
+                      · traza {{ event.traceId.slice(0, 8) }}
+                    }
+                  </p>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    }
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Eventos</h2>
+          <p>{{ events().length }} {{ events().length === 1 ? 'evento' : 'eventos' }} (más recientes primero)</p>
+        </div>
+      </div>
+
+      <form class="filters" (ngSubmit)="search()">
+        <div class="field">
+          <label for="reservationId">N° de reserva</label>
+          <input id="reservationId" name="reservationId" type="number" min="1" placeholder="Todas" [(ngModel)]="filters.reservationId" />
+        </div>
+
+        <div class="field">
+          <label for="status">Estado nuevo</label>
+          <select id="status" name="status" [(ngModel)]="filters.status">
+            <option value="">Todos</option>
+            @for (status of statuses; track status) {
+              <option [value]="status">{{ statusLabel(status) }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="userEmail">Usuario</label>
+          <input id="userEmail" name="userEmail" type="email" placeholder="correo@dominio.cl" [(ngModel)]="filters.userEmail" />
+        </div>
+
+        <div class="field limit-field">
+          <label for="limit">Máximo</label>
+          <select id="limit" name="limit" [(ngModel)]="filters.limit">
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+            <option [ngValue]="500">500</option>
+          </select>
+        </div>
+
+        <button type="submit" class="primary-button">Buscar</button>
+        <button type="button" class="secondary-button" (click)="clearFilters()">Limpiar</button>
+      </form>
+
+      @if (loading()) {
+        <p class="state-message">Consultando auditoría...</p>
+      } @else if (events().length === 0) {
+        <p class="state-message">No hay eventos para estos filtros.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Reserva</th>
+                <th>Cambio de estado</th>
+                <th>Usuario</th>
+                <th>Traza</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (event of events(); track event.id) {
+                <tr>
+                  <td>{{ event.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+                  <td>
+                    <button type="button" class="link-button" (click)="openTimeline(event.reservationId)" title="Ver línea de tiempo">
+                      #{{ event.reservationId }}
+                    </button>
+                  </td>
+                  <td>
+                    <span class="transition">
+                      @if (event.previousStatus) {
+                        <span class="badge" [ngClass]="statusBadge(event.previousStatus)">{{ statusLabel(event.previousStatus) }}</span>
+                        <span aria-hidden="true">→</span>
+                      }
+                      <span class="badge" [ngClass]="statusBadge(event.newStatus)">{{ statusLabel(event.newStatus) }}</span>
+                    </span>
+                  </td>
+                  <td>{{ event.userEmail }}</td>
+                  <td class="muted trace">{{ event.traceId ? event.traceId.slice(0, 8) : '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>

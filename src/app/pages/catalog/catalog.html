@@ -1,1 +1,208 @@
-<p>catalog works!</p>
+<div class="page as-page">
+  <header class="page-header">
+    <div>
+      <h1>Catálogo</h1>
+      <p>Alojamientos disponibles y tickets de preparación y limpieza.</p>
+    </div>
+
+    <a routerLink="/dashboard" class="back-button">Volver al dashboard</a>
+  </header>
+
+  <main class="content">
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>{{ editingId() ? 'Editar alojamiento #' + editingId() : 'Nuevo alojamiento' }}</h2>
+          <p>Los cambios quedan disponibles de inmediato para las reservas.</p>
+        </div>
+      </div>
+
+      <form (ngSubmit)="save()" #accommodationForm="ngForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">Nombre</label>
+            <input id="name" name="name" maxlength="100" required [(ngModel)]="form.name" />
+          </div>
+
+          <div class="field">
+            <label for="type">Tipo</label>
+            <select id="type" name="type" [(ngModel)]="form.type">
+              @for (type of types; track type) {
+                <option [value]="type">{{ typeLabel(type) }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="location">Ubicación</label>
+            <input id="location" name="location" maxlength="120" required [(ngModel)]="form.location" />
+          </div>
+
+          <div class="field">
+            <label for="capacity">Capacidad (huéspedes)</label>
+            <input id="capacity" name="capacity" type="number" min="1" max="20" required [(ngModel)]="form.capacity" />
+          </div>
+
+          <div class="field">
+            <label for="price">Precio por noche (CLP)</label>
+            <input id="price" name="price" type="number" min="1" step="1000" required [(ngModel)]="form.pricePerNight" />
+          </div>
+
+          <div class="field checkbox-field">
+            <label for="active">
+              <input id="active" name="active" type="checkbox" [(ngModel)]="form.active" />
+              Disponible para reservas
+            </label>
+          </div>
+
+          <div class="field field-wide">
+            <label for="description">Descripción (opcional)</label>
+            <textarea id="description" name="description" maxlength="500" [(ngModel)]="form.description"></textarea>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button type="submit" class="primary-button" [disabled]="saving() || accommodationForm.invalid">
+            {{ saving() ? 'Guardando...' : (editingId() ? 'Guardar cambios' : 'Crear alojamiento') }}
+          </button>
+
+          @if (editingId()) {
+            <button type="button" class="secondary-button" (click)="cancelEdit()">Cancelar edición</button>
+          }
+        </div>
+      </form>
+    </section>
+
+    @if (message()) {
+      <div class="alert success" role="status">{{ message() }}</div>
+    }
+
+    @if (errorMessage()) {
+      <div class="alert error" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Alojamientos</h2>
+          <p>{{ activeCount() }} activos de {{ accommodations().length }} registrados.</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="loadAccommodations()">Actualizar</button>
+      </div>
+
+      @if (loadingAccommodations()) {
+        <p class="state-message">Cargando alojamientos...</p>
+      } @else if (accommodations().length === 0) {
+        <p class="state-message">Aún no hay alojamientos registrados.</p>
+      } @else {
+        <div class="accommodations-grid">
+          @for (item of accommodations(); track item.id) {
+            <article class="accommodation-card" [class.inactive]="!item.active">
+              <div class="accommodation-top">
+                <div>
+                  <span class="muted">#{{ item.id }} · {{ typeLabel(item.type) }}</span>
+                  <h3>{{ item.name }}</h3>
+                </div>
+                <span class="badge" [class.badge-good]="item.active" [class.badge-neutral]="!item.active">
+                  {{ item.active ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+
+              <p class="location">{{ item.location }}</p>
+              @if (item.description) {
+                <p class="muted description">{{ item.description }}</p>
+              }
+
+              <dl>
+                <div>
+                  <dt>Capacidad</dt>
+                  <dd>{{ item.capacity }} huéspedes</dd>
+                </div>
+                <div>
+                  <dt>Por noche</dt>
+                  <dd>{{ item.pricePerNight | currency: 'CLP' : 'symbol-narrow' : '1.0-0' }}</dd>
+                </div>
+              </dl>
+
+              <div class="button-row">
+                <button type="button" class="secondary-button small" (click)="edit(item)">Editar</button>
+                @if (isAdmin() && item.active) {
+                  <button type="button" class="danger-button small" (click)="deactivate(item)">Desactivar</button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Tickets de limpieza</h2>
+          <p>Se crean automáticamente al confirmar una reserva y al hacer checkout (RabbitMQ).</p>
+        </div>
+        @if (ticketFilter() === 'PENDIENTE') {
+          <span class="badge badge-warning">{{ pendingCount() }} pendientes</span>
+        }
+      </div>
+
+      <div class="filters">
+        <div class="field">
+          <label for="ticketFilter">Estado</label>
+          <select id="ticketFilter" [ngModel]="ticketFilter()" (ngModelChange)="changeTicketFilter($event)">
+            <option value="PENDIENTE">Pendientes</option>
+            <option value="COMPLETADO">Completados</option>
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <button type="button" class="secondary-button" (click)="loadTickets()">Actualizar</button>
+      </div>
+
+      @if (loadingTickets()) {
+        <p class="state-message">Cargando tickets...</p>
+      } @else if (tickets().length === 0) {
+        <p class="state-message">No hay tickets para este filtro.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Acción</th>
+                <th>Alojamiento</th>
+                <th>Reserva</th>
+                <th>Estadía</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ticket of tickets(); track ticket.id) {
+                <tr>
+                  <td><strong>{{ ticket.code }}</strong></td>
+                  <td>{{ actionLabel(ticket.action) }}</td>
+                  <td>{{ ticket.accommodationName ?? 'Alojamiento ' + ticket.accommodationId }}</td>
+                  <td>#{{ ticket.reservationId }}</td>
+                  <td>{{ ticket.checkInDate | date: 'dd/MM' }} – {{ ticket.checkOutDate | date: 'dd/MM/yyyy' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-warning]="ticket.status === 'PENDIENTE'" [class.badge-good]="ticket.status === 'COMPLETADO'">
+                      {{ ticket.status === 'PENDIENTE' ? 'Pendiente' : 'Completado' }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (ticket.status === 'PENDIENTE') {
+                      <button type="button" class="primary-button small" (click)="completeTicket(ticket)">Marcar completado</button>
+                    } @else {
+                      <span class="muted">{{ ticket.completedAt | date: 'dd/MM HH:mm' }}</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>

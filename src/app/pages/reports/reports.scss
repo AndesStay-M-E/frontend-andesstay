@@ -1,0 +1,102 @@
+.stat-date {
+  font-size: 24px !important;
+}
+
+// Gráfico de barras de una sola serie: barras delgadas, extremo superior
+// redondeado (4px) apoyado en la línea base, sin leyenda (el título la nombra)
+// y tooltip al pasar el mouse o enfocar con teclado.
+.chart {
+  margin: 28px 0 0;
+
+  figcaption {
+    margin-bottom: 14px;
+    color: #5f718a;
+    font-size: 14px;
+    font-weight: 700;
+  }
+}
+
+.chart-plot {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  height: 220px;
+  padding-top: 26px;
+}
+
+.chart-column {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  outline: none;
+  border-radius: 6px;
+
+  &:hover,
+  &:focus-visible {
+    background: #f1f6fa;
+
+    .chart-tooltip {
+      opacity: 1;
+    }
+
+    .chart-bar:not(.empty) {
+      background: #056b66;
+    }
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px #07877f;
+  }
+}
+
+.chart-bar-area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  border-bottom: 1px solid #cfdae5;
+}
+
+.chart-bar {
+  width: min(28px, 60%);
+  min-height: 0;
+  background: #07877f;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+
+  &.empty {
+    height: 2px !important;
+    background: #cfdae5;
+  }
+}
+
+.chart-label {
+  padding: 8px 0 0;
+  color: #607088;
+  font-size: 12px;
+  text-align: center;
+
+  &.today {
+    color: #10233f;
+    font-weight: 700;
+  }
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  z-index: 1;
+  padding: 4px 8px;
+  color: white;
+  white-space: nowrap;
+  background: #10233f;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease;
+}

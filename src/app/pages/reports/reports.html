@@ -1,1 +1,129 @@
-<p>reports works!</p>
+<div class="page as-page">
+  <header class="page-header">
+    <div>
+      <h1>Reportería</h1>
+      <p>Vouchers emitidos por reservas confirmadas e indicadores.</p>
+    </div>
+
+    <a routerLink="/dashboard" class="back-button">Volver al dashboard</a>
+  </header>
+
+  <main class="content">
+    @if (errorMessage()) {
+      <div class="alert error" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Resumen</h2>
+          <p>Los vouchers se generan automáticamente al confirmar una reserva (RabbitMQ).</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="refresh()">Actualizar</button>
+      </div>
+
+      @if (loadingSummary() && !summary()) {
+        <p class="state-message">Cargando indicadores...</p>
+      } @else if (summary(); as s) {
+        <div class="stats">
+          <div class="stat">
+            <span>Vouchers emitidos</span>
+            <strong>{{ s.totalVouchers }}</strong>
+            <small>en total</small>
+          </div>
+          <div class="stat">
+            <span>Emitidos hoy</span>
+            <strong>{{ s.vouchersToday }}</strong>
+            <small>{{ weekTotal() }} en los últimos 7 días</small>
+          </div>
+          <div class="stat">
+            <span>Clientes distintos</span>
+            <strong>{{ s.distinctRecipients }}</strong>
+            <small>con al menos un voucher</small>
+          </div>
+          <div class="stat">
+            <span>Último voucher</span>
+            <strong class="stat-date">{{ s.lastVoucherAt ? (s.lastVoucherAt | date: 'dd/MM HH:mm') : '—' }}</strong>
+            <small>{{ s.lastVoucherAt ? (s.lastVoucherAt | date: 'yyyy') : 'sin emisiones' }}</small>
+          </div>
+        </div>
+
+        <figure class="chart">
+          <figcaption>Vouchers por día · últimos 7 días</figcaption>
+
+          <div class="chart-plot" role="list">
+            @for (bar of bars(); track bar.date) {
+              <div
+                class="chart-column"
+                role="listitem"
+                tabindex="0"
+                [attr.aria-label]="bar.label + ': ' + bar.count + ' vouchers'"
+              >
+                <span class="chart-tooltip">{{ bar.count }} {{ bar.count === 1 ? 'voucher' : 'vouchers' }}</span>
+                <div class="chart-bar-area">
+                  <div
+                    class="chart-bar"
+                    [class.empty]="bar.count === 0"
+                    [style.height.%]="bar.heightPercent"
+                  ></div>
+                </div>
+                <span class="chart-label" [class.today]="bar.isToday">{{ bar.label }}</span>
+              </div>
+            }
+          </div>
+        </figure>
+      }
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Vouchers</h2>
+          <p>{{ vouchers().length }} {{ vouchers().length === 1 ? 'resultado' : 'resultados' }}</p>
+        </div>
+      </div>
+
+      <form class="filters" (ngSubmit)="loadVouchers()">
+        <div class="field">
+          <label for="reservationFilter">N° de reserva</label>
+          <input id="reservationFilter" name="reservationFilter" type="number" min="1" placeholder="Todas" [(ngModel)]="reservationFilter" />
+        </div>
+        <button type="submit" class="primary-button">Buscar</button>
+        @if (reservationFilter) {
+          <button type="button" class="secondary-button" (click)="clearFilter()">Limpiar</button>
+        }
+      </form>
+
+      @if (loadingVouchers()) {
+        <p class="state-message">Cargando vouchers...</p>
+      } @else if (vouchers().length === 0) {
+        <p class="state-message">No hay vouchers. Confirma una reserva para generar el primero.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Reserva</th>
+                <th>Destinatario</th>
+                <th>Tipo</th>
+                <th>Emitido</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (voucher of vouchers(); track voucher.id) {
+                <tr>
+                  <td><strong>{{ voucher.code }}</strong></td>
+                  <td>#{{ voucher.reservationId }}</td>
+                  <td>{{ voucher.recipient }}</td>
+                  <td><span class="badge badge-info">Voucher de reserva</span></td>
+                  <td>{{ voucher.generatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>
