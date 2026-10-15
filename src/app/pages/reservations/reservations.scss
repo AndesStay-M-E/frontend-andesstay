@@ -219,24 +219,34 @@
   font-weight: 700;
 }
 
-.status-pending {
+.status-creada {
   color: #7a5100;
   background: #fff0bd;
 }
 
-.status-confirmed {
+.status-confirmada {
   color: #08734a;
   background: #d7f8e8;
 }
 
-.status-cancelled {
-  color: #a71919;
-  background: #ffe0e0;
+.status-checkin_pendiente {
+  color: #1d4f91;
+  background: #dceaff;
 }
 
-.status-completed {
+.status-en_estadia {
+  color: #5b2a86;
+  background: #efe1fb;
+}
+
+.status-checkout {
   color: #38516d;
   background: #e4ebf2;
+}
+
+.status-cancelada {
+  color: #a71919;
+  background: #ffe0e0;
 }
 
 dl {

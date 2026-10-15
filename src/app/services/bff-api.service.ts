@@ -18,11 +18,14 @@ export interface AdminResponse {
   message: string;
 }
 
+// Debe coincidir con el enum ReservationStatus de ms-andesstay-reservations.
 export type ReservationStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'CANCELLED'
-  | 'COMPLETED';
+  | 'CREADA'
+  | 'CONFIRMADA'
+  | 'CHECKIN_PENDIENTE'
+  | 'EN_ESTADIA'
+  | 'CHECKOUT'
+  | 'CANCELADA';
 
 export interface ReservationRequest {
   accommodationId: number;
@@ -104,6 +107,16 @@ export class BffApiService {
     return this.http.patch<ReservationResponse>(
       `${environment.apiUrl}/reservations/${id}/confirm`,
       {},
+    );
+  }
+
+  updateReservationStatus(
+    id: number,
+    status: ReservationStatus,
+  ): Observable<ReservationResponse> {
+    return this.http.put<ReservationResponse>(
+      `${environment.apiUrl}/reservations/${id}/status`,
+      { status },
     );
   }
 

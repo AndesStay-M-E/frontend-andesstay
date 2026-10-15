@@ -185,10 +185,7 @@
 
           <div class="actions">
             <button
-              *ngIf="
-                isAdmin &&
-                reservation.status === 'PENDING'
-              "
+              *ngIf="isAdmin && reservation.status === 'CREADA'"
               type="button"
               class="confirm-button"
               (click)="confirmReservation(reservation.id)"
@@ -197,10 +194,16 @@
             </button>
 
             <button
-              *ngIf="
-                reservation.status === 'PENDING' ||
-                reservation.status === 'CONFIRMED'
-              "
+              *ngIf="isAdmin && nextStatus(reservation.status)"
+              type="button"
+              class="confirm-button"
+              (click)="advanceReservation(reservation)"
+            >
+              Pasar a {{ nextStatusLabel(reservation.status) }}
+            </button>
+
+            <button
+              *ngIf="canCancel(reservation.status)"
               type="button"
               class="cancel-button"
               (click)="cancelReservation(reservation.id)"

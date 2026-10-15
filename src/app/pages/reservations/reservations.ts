@@ -133,13 +133,65 @@ export class Reservations implements OnInit {
 
   statusLabel(status: ReservationStatus): string {
     const labels: Record<ReservationStatus, string> = {
-      PENDING: 'Pendiente',
-      CONFIRMED: 'Confirmada',
-      CANCELLED: 'Cancelada',
-      COMPLETED: 'Completada',
+      CREADA: 'Creada',
+      CONFIRMADA: 'Confirmada',
+      CHECKIN_PENDIENTE: 'Check-in pendiente',
+      EN_ESTADIA: 'En estadía',
+      CHECKOUT: 'Checkout realizado',
+      CANCELADA: 'Cancelada',
     };
 
-    return labels[status];
+    return labels[status] ?? status;
+  }
+
+  /**
+   * Siguiente estado del flujo (mismo orden que valida el backend).
+   * CREADA se confirma con el botón "Confirmar".
+   */
+  nextStatus(status: ReservationStatus): ReservationStatus | null {
+    const next: Partial<Record<ReservationStatus, ReservationStatus>> = {
+      CONFIRMADA: 'CHECKIN_PENDIENTE',
+      CHECKIN_PENDIENTE: 'EN_ESTADIA',
+      EN_ESTADIA: 'CHECKOUT',
+    };
+
+    return next[status] ?? null;
+  }
+
+  nextStatusLabel(status: ReservationStatus): string {
+    const next = this.nextStatus(status);
+    return next ? this.statusLabel(next) : '';
+  }
+
+  canCancel(status: ReservationStatus): boolean {
+    return (
+      status === 'CREADA' ||
+      status === 'CONFIRMADA' ||
+      status === 'CHECKIN_PENDIENTE'
+    );
+  }
+
+  advanceReservation(reservation: ReservationResponse): void {
+    const next = this.nextStatus(reservation.status);
+
+    if (!next) {
+      return;
+    }
+
+    this.clearMessages();
+
+    this.bffApi.updateReservationStatus(reservation.id, next).subscribe({
+      next: () => {
+        this.message = `Reserva #${reservation.id} actualizada a ${this.statusLabel(next)}.`;
+        this.loadReservations();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage = this.getErrorMessage(
+          error,
+          'No fue posible cambiar el estado de la reserva.',
+        );
+      },
+    });
   }
 
   private loadUserAndReservations(): void {
