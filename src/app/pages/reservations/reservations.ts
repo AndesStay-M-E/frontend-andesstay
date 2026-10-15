@@ -70,11 +70,13 @@ export class Reservations implements OnInit {
 )
       .subscribe({
         next: () => {
+          this.changeDetector.markForCheck();
           this.message = 'Reserva creada correctamente.';
           this.form = this.emptyForm();
           this.loadReservations();
         },
         error: (error: unknown) => {
+          this.changeDetector.markForCheck();
   if (error instanceof TimeoutError) {
     this.errorMessage =
       'El servidor tardó demasiado en responder. Verifica que el BFF y el microservicio de reservas estén ejecutándose.';
@@ -94,10 +96,12 @@ export class Reservations implements OnInit {
 
     this.bffApi.confirmReservation(id).subscribe({
       next: () => {
+        this.changeDetector.markForCheck();
         this.message = 'Reserva confirmada correctamente.';
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
+        this.changeDetector.markForCheck();
         this.errorMessage = this.getErrorMessage(
           error,
           'No fue posible confirmar la reserva.',
@@ -119,10 +123,12 @@ export class Reservations implements OnInit {
 
     this.bffApi.cancelReservation(id).subscribe({
       next: () => {
+        this.changeDetector.markForCheck();
         this.message = 'Reserva cancelada correctamente.';
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
+        this.changeDetector.markForCheck();
         this.errorMessage = this.getErrorMessage(
           error,
           'No fue posible cancelar la reserva.',
@@ -182,10 +188,12 @@ export class Reservations implements OnInit {
 
     this.bffApi.updateReservationStatus(reservation.id, next).subscribe({
       next: () => {
+        this.changeDetector.markForCheck();
         this.message = `Reserva #${reservation.id} actualizada a ${this.statusLabel(next)}.`;
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
+        this.changeDetector.markForCheck();
         this.errorMessage = this.getErrorMessage(
           error,
           'No fue posible cambiar el estado de la reserva.',
@@ -199,10 +207,12 @@ export class Reservations implements OnInit {
 
     this.bffApi.getCurrentUser().subscribe({
       next: (user) => {
+        this.changeDetector.markForCheck();
         this.isAdmin = user.roles.includes('ADMIN');
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
+        this.changeDetector.markForCheck();
         this.loading = false;
         this.errorMessage = this.getErrorMessage(
           error,
@@ -220,12 +230,19 @@ export class Reservations implements OnInit {
       : this.bffApi.getMyReservations();
 
     request
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        finalize(() => {
+          this.loading = false;
+          this.changeDetector.markForCheck();
+        }),
+      )
       .subscribe({
         next: (reservations) => {
+          this.changeDetector.markForCheck();
           this.reservations = reservations;
         },
         error: (error: HttpErrorResponse) => {
+          this.changeDetector.markForCheck();
           this.errorMessage = this.getErrorMessage(
             error,
             'No fue posible cargar las reservas.',
