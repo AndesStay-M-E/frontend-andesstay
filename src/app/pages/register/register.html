@@ -1,0 +1,21 @@
+<main class="register-page">
+  <section class="register-card">
+    <h1>Crear cuenta AndesStay</h1>
+    <p>Te enviaremos una invitación para ingresar con tu correo electrónico.</p>
+    @if (!success) {
+      <form (ngSubmit)="register()" #registrationForm="ngForm">
+        <label for="fullName">Nombre completo</label>
+        <input id="fullName" name="fullName" type="text" autocomplete="name"
+          minlength="2" maxlength="100" required [(ngModel)]="name" />
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email" autocomplete="email"
+          maxlength="254" required email [(ngModel)]="email" />
+        <button type="submit" [disabled]="registrationForm.invalid || busy">
+          {{ busy ? 'Enviando...' : 'Registrarme' }}
+        </button>
+      </form>
+    }
+    @if (message) { <p role="status">{{ message }}</p> }
+    <a routerLink="/login">Volver a iniciar sesión</a>
+  </section>
+</main>

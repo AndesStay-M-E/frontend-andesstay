@@ -9,6 +9,11 @@ export const routes: Routes = [
       import('./pages/login/login').then((component) => component.Login),
   },
   {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/register/register').then((component) => component.Register),
+  },
+  {
     path: 'dashboard',
     canActivate: [MsalGuard],
     loadComponent: () =>

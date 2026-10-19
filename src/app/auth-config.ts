@@ -37,7 +37,11 @@ export function msalGuardConfigFactory(): MsalGuardConfiguration {
 }
 
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
-  const protectedResourceMap = new Map<string, string[]>();
+  const protectedResourceMap = new Map<string, string[] | null>();
+
+  // Registration is public: MSAL must not redirect the anonymous caller.
+  // Place this specific rule before the protected wildcard.
+  protectedResourceMap.set(`${environment.apiUrl}/public/register`, null);
 
   protectedResourceMap.set(
     `${environment.apiUrl}/*`,

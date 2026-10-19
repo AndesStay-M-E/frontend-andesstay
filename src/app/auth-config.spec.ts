@@ -47,4 +47,11 @@ describe('Configuración MSAL', () => {
       InteractionType.Redirect,
     );
   });
+
+  it('no debe forzar login en el registro público', () => {
+    const configuration = msalInterceptorConfigFactory();
+    expect(configuration.protectedResourceMap.get(
+      `${environment.apiUrl}/public/register`,
+    )).toBeNull();
+  });
 });

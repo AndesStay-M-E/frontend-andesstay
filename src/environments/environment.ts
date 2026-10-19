@@ -1,13 +1,13 @@
 export const environment = {
   production: false,
 
-  apiUrl: 'https://8hk6chhmzg.execute-api.us-east-1.amazonaws.com/api',
+  apiUrl: 'http://localhost:8080/api',
 
   azure: {
-    clientId: 'c6126dbb-653d-40ae-9c1f-731a504108b6',
-    tenantId: '24b1cd18-d18e-4855-bcaf-51ac2db566d5',
+    clientId: 'bb7e20d0-d275-4c90-b5ec-99f072c756ce',
+    tenantId: '4fe52189-087c-4613-8660-500431cc0eb9',
     redirectUri: 'http://localhost:4200',
     apiScope:
-      'api://c6126dbb-653d-40ae-9c1f-731a504108b6/access_as_user',
+      'api://85237aa5-9ece-48d3-8767-9698df0efefa/access_as_user',
   },
 };
