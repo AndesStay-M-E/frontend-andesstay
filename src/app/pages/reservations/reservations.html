@@ -33,18 +33,12 @@
                 @for (item of accommodations(); track item.id) {
                   <option [ngValue]="item.id">
                     {{ item.name }} · {{ item.location }} ({{ item.capacity }} pers.)
+                    — {{ item.pricePerNight | currency:'CLP':'symbol-narrow':'1.0-0' }}/noche
                   </option>
                 }
               </select>
             } @else {
-              <input
-                id="accommodationId"
-                name="accommodationId"
-                type="number"
-                min="1"
-                [(ngModel)]="form.accommodationId"
-                required
-              />
+              <p class="state-message">No hay alojamientos disponibles. Recarga la página para consultar sus precios.</p>
             }
           </div>
 
@@ -85,23 +79,23 @@
           </div>
 
           <div class="field field-wide">
-            <label for="totalAmount">Monto total</label>
-            <input
-              id="totalAmount"
-              name="totalAmount"
-              type="number"
-              min="1"
-              step="1"
-              [(ngModel)]="form.totalAmount"
-              required
-            />
+            <label>Valor de la reserva (calculado automáticamente)</label>
+            <div class="price-summary" aria-live="polite">
+              @if (selectedAccommodation) {
+                <span>Precio por noche: {{ selectedAccommodation.pricePerNight | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+                <span>Noches: {{ nights }}</span>
+                <strong>Total: {{ totalAmount | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong>
+              } @else {
+                <span>Selecciona un alojamiento para conocer el precio.</span>
+              }
+            </div>
           </div>
         </div>
 
         <button
           type="submit"
           class="primary-button"
-          [disabled]="saving || reservationForm.invalid"
+          [disabled]="saving || reservationForm.invalid || totalAmount <= 0 || !selectedAccommodation"
         >
           {{ saving ? 'Guardando...' : 'Crear reserva' }}
         </button>

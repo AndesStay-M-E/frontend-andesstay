@@ -32,7 +32,6 @@ export interface ReservationRequest {
   checkInDate: string;
   checkOutDate: string;
   guests: number;
-  totalAmount: number;
 }
 
 export interface ReservationResponse {

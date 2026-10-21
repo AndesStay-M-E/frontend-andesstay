@@ -77,9 +77,44 @@ export class Reservations implements OnInit {
           this.form.accommodationId = accommodations[0].id;
         }
       },
-      // Sin catálogo se puede seguir ingresando el ID a mano.
-      error: () => this.accommodations.set([]),
+      error: () => {
+        this.accommodations.set([]);
+        this.errorMessage = 'No fue posible cargar los alojamientos y sus precios. Intenta recargar la página.';
+        this.changeDetector.markForCheck();
+      },
     });
+  }
+
+  /** Precio oficial del alojamiento seleccionado, obtenido del catálogo. */
+  get selectedAccommodation(): Accommodation | undefined {
+    return this.accommodations().find(
+      (item) => item.id === Number(this.form.accommodationId),
+    );
+  }
+
+  /** Diferencia entre fechas UTC; no cambia al variar el horario de verano. */
+  get nights(): number {
+    if (!this.form.checkInDate || !this.form.checkOutDate) {
+      return 0;
+    }
+
+    const start = Date.parse(`${this.form.checkInDate}T00:00:00Z`);
+    const end = Date.parse(`${this.form.checkOutDate}T00:00:00Z`);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) {
+      return 0;
+    }
+
+    return Math.max(0, Math.round((end - start) / 86_400_000));
+  }
+
+  /** Solo informativo: el backend recalcula usando el catálogo. */
+  get totalAmount(): number {
+    const accommodation = this.selectedAccommodation;
+    const nightlyPrice = Number(accommodation?.pricePerNight);
+    if (!accommodation || !Number.isFinite(nightlyPrice) || nightlyPrice <= 0 || this.nights < 1) {
+      return 0;
+    }
+    return nightlyPrice * this.nights;
   }
 
   createReservation(): void {
@@ -284,26 +319,25 @@ export class Reservations implements OnInit {
   }
 
   private isFormValid(): boolean {
-    if (
-      !this.form.accommodationId ||
-      !this.form.checkInDate ||
-      !this.form.checkOutDate ||
-      !this.form.guests ||
-      !this.form.totalAmount
-    ) {
-      this.errorMessage = 'Debes completar todos los campos.';
+    const accommodation = this.selectedAccommodation;
+    if (!accommodation || !this.form.checkInDate || !this.form.checkOutDate) {
+      this.errorMessage = 'Debes seleccionar un alojamiento y completar las fechas.';
       return false;
     }
 
-    if (this.form.checkOutDate <= this.form.checkInDate) {
-      this.errorMessage =
-        'La fecha de salida debe ser posterior a la fecha de entrada.';
+    if (this.form.checkInDate < this.today || this.nights < 1) {
+      this.errorMessage = 'La entrada no puede ser pasada y la salida debe ser posterior a la entrada.';
       return false;
     }
 
-    if (this.form.guests < 1 || this.form.totalAmount <= 0) {
-      this.errorMessage =
-        'Los huéspedes y el monto deben ser mayores que cero.';
+    if (!Number.isInteger(this.form.guests) || this.form.guests < 1 ||
+        this.form.guests > accommodation.capacity) {
+      this.errorMessage = `Este alojamiento permite entre 1 y ${accommodation.capacity} huéspedes.`;
+      return false;
+    }
+
+    if (this.totalAmount <= 0) {
+      this.errorMessage = 'No se pudo calcular el total con el precio del alojamiento.';
       return false;
     }
 
@@ -312,11 +346,10 @@ export class Reservations implements OnInit {
 
   private emptyForm(): ReservationRequest {
     return {
-      accommodationId: 1,
+      accommodationId: this.accommodations()[0]?.id ?? 0,
       checkInDate: '',
       checkOutDate: '',
       guests: 1,
-      totalAmount: 0,
     };
   }
 
