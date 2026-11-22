@@ -13,12 +13,18 @@ import {
 import { environment } from '../environments/environment';
 
 export function msalInstanceFactory(): IPublicClientApplication {
+  // Arquitectura CSR: la aplicación corre completa en el navegador.
+  // Se usa el origen actual como redirectUri (http://localhost:4200, la URL
+  // de CloudFront o la de Amplify). Ese origen debe estar registrado como
+  // "Single-page application" en el App Registration de Azure.
+  const origin = window.location.origin;
+
   return new PublicClientApplication({
     auth: {
       clientId: environment.azure.clientId,
       authority: `https://login.microsoftonline.com/${environment.azure.tenantId}`,
-      redirectUri: environment.azure.redirectUri,
-      postLogoutRedirectUri: environment.azure.redirectUri,
+      redirectUri: origin,
+      postLogoutRedirectUri: origin,
     },
     cache: {
       cacheLocation: BrowserCacheLocation.SessionStorage,

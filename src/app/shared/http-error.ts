@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 /**
- * Convierte un error HTTP del BFF en un mensaje para el usuario.
- * Los microservicios responden ProblemDetail ({ title, detail, errors }).
+ * Convierte un error HTTP en un mensaje amable para el usuario.
+ * El backend responde ProblemDetail ({ title, detail, errors }); solo se
+ * muestran los mensajes de validación, nunca códigos ni nombres de servicios.
  */
 export function httpErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof HttpErrorResponse)) {
@@ -10,7 +11,7 @@ export function httpErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error.status === 0) {
-    return 'No fue posible conectar con el BFF. Verifica que esté en ejecución.';
+    return 'No pudimos conectarnos con el sistema. Revisa tu conexión e intenta nuevamente en unos minutos.';
   }
 
   if (error.status === 401) {
@@ -21,6 +22,11 @@ export function httpErrorMessage(error: unknown, fallback: string): string {
     return 'No tienes permisos para realizar esta acción.';
   }
 
+  // Errores del servidor (500, 502, 503...): mensaje genérico.
+  if (error.status >= 500) {
+    return `${fallback} Intenta nuevamente en unos minutos.`;
+  }
+
   const body = parseBody(error.error);
   const fieldErrors = body?.errors ? Object.values(body.errors) : [];
 
@@ -28,6 +34,7 @@ export function httpErrorMessage(error: unknown, fallback: string): string {
     return fieldErrors.join(' ');
   }
 
+  // Errores 4xx de negocio (ej: "La reserva ya está confirmada").
   return body?.detail ?? fallback;
 }
 

@@ -2,10 +2,10 @@
   <header class="page-header">
     <div>
       <h1>Auditoría</h1>
-      <p>Trazabilidad de cada cambio de estado de las reservas.</p>
+      <p>Historial de cambios de cada reserva: quién lo hizo, cuándo y desde dónde.</p>
     </div>
 
-    <a routerLink="/dashboard" class="back-button">Volver al dashboard</a>
+    <a routerLink="/dashboard" class="back-button">Volver al inicio</a>
   </header>
 
   <main class="content">
@@ -17,26 +17,26 @@
       <div class="section-heading">
         <div>
           <h2>Resumen</h2>
-          <p>Los eventos llegan desde RabbitMQ (exchange andesstay.events).</p>
+          <p>Cada cambio de estado queda registrado automáticamente. Toca un estado para filtrar.</p>
         </div>
-        <button type="button" class="secondary-button" (click)="refresh()">Actualizar</button>
+        <button type="button" class="secondary-button" (click)="refresh()">Actualizar historial</button>
       </div>
 
       @if (summary(); as s) {
         <div class="stats">
           <div class="stat">
-            <span>Eventos registrados</span>
+            <span>Cambios registrados</span>
             <strong>{{ s.totalEvents }}</strong>
-            <small>{{ s.lastEventAt ? 'último ' + (s.lastEventAt | date: 'dd/MM HH:mm') : 'sin eventos' }}</small>
+            <small>{{ s.lastEventAt ? 'último el ' + (s.lastEventAt | date: 'dd/MM/yyyy HH:mm') : 'sin cambios aún' }}</small>
           </div>
           <div class="stat">
             <span>Reservas auditadas</span>
             <strong>{{ s.reservations }}</strong>
-            <small>con al menos un evento</small>
+            <small>con al menos un cambio</small>
           </div>
         </div>
 
-        <div class="status-chips" aria-label="Eventos por estado">
+        <div class="status-chips" aria-label="Cambios por estado">
           @for (status of statuses; track status) {
             <button type="button" class="status-chip" (click)="filterByStatus(status)" [class.selected]="filters.status === status">
               <span class="badge" [ngClass]="statusBadge(status)">{{ statusLabel(status) }}</span>
@@ -53,15 +53,18 @@
       <section class="card">
         <div class="section-heading">
           <div>
-            <h2>Línea de tiempo · reserva #{{ timelineReservation() }}</h2>
+            <h2>Historial de la reserva #{{ timelineReservation() }}</h2>
             <p>Todos los cambios de estado en orden cronológico.</p>
           </div>
           <button type="button" class="secondary-button" (click)="closeTimeline()">Cerrar</button>
         </div>
 
         @if (loadingTimeline()) {
-          <p class="state-message">Cargando línea de tiempo...</p>
+          <p class="state-message">Cargando historial...</p>
         } @else {
+          @if (timeline().length === 0) {
+            <p class="state-message">Esta reserva aún no tiene cambios registrados.</p>
+          }
           <ol class="timeline">
             @for (event of timeline(); track event.id) {
               <li>
@@ -77,10 +80,7 @@
                     }
                   </p>
                   <p class="muted">
-                    {{ event.userEmail }}
-                    @if (event.traceId) {
-                      · traza {{ event.traceId.slice(0, 8) }}
-                    }
+                    Realizado por {{ actorLabel(event) }} · IP {{ event.sourceIp || '—' }}
                   </p>
                 </div>
               </li>
@@ -93,8 +93,8 @@
     <section class="card">
       <div class="section-heading">
         <div>
-          <h2>Eventos</h2>
-          <p>{{ events().length }} {{ events().length === 1 ? 'evento' : 'eventos' }} (más recientes primero)</p>
+          <h2>Historial de cambios</h2>
+          <p>{{ events().length }} {{ events().length === 1 ? 'cambio' : 'cambios' }} · más recientes primero</p>
         </div>
       </div>
 
@@ -115,12 +115,22 @@
         </div>
 
         <div class="field">
-          <label for="userEmail">Usuario</label>
+          <label for="userEmail">Correo (cliente o quien hizo el cambio)</label>
           <input id="userEmail" name="userEmail" type="email" placeholder="correo@dominio.cl" [(ngModel)]="filters.userEmail" />
         </div>
 
+        <div class="field">
+          <label for="from">Desde</label>
+          <input id="from" name="from" type="date" [attr.max]="filters.to || null" [(ngModel)]="filters.from" />
+        </div>
+
+        <div class="field">
+          <label for="to">Hasta</label>
+          <input id="to" name="to" type="date" [attr.min]="filters.from || null" [(ngModel)]="filters.to" />
+        </div>
+
         <div class="field limit-field">
-          <label for="limit">Máximo</label>
+          <label for="limit">Mostrar</label>
           <select id="limit" name="limit" [(ngModel)]="filters.limit">
             <option [ngValue]="50">50</option>
             <option [ngValue]="100">100</option>
@@ -128,14 +138,14 @@
           </select>
         </div>
 
-        <button type="submit" class="primary-button">Buscar</button>
-        <button type="button" class="secondary-button" (click)="clearFilters()">Limpiar</button>
+        <button type="submit" class="primary-button">Aplicar filtros</button>
+        <button type="button" class="secondary-button" (click)="clearFilters()">Limpiar filtros</button>
       </form>
 
       @if (loading()) {
-        <p class="state-message">Consultando auditoría...</p>
+        <p class="state-message">Buscando cambios...</p>
       } @else if (events().length === 0) {
-        <p class="state-message">No hay eventos para estos filtros.</p>
+        <p class="state-message">No encontramos cambios con estos filtros. Prueba con otras fechas o limpia los filtros.</p>
       } @else {
         <div class="table-wrapper">
           <table>
@@ -144,8 +154,9 @@
                 <th>Fecha</th>
                 <th>Reserva</th>
                 <th>Cambio de estado</th>
-                <th>Usuario</th>
-                <th>Traza</th>
+                <th>Cliente</th>
+                <th>Realizado por</th>
+                <th>Desde (IP)</th>
               </tr>
             </thead>
             <tbody>
@@ -153,7 +164,7 @@
                 <tr>
                   <td>{{ event.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
                   <td>
-                    <button type="button" class="link-button" (click)="openTimeline(event.reservationId)" title="Ver línea de tiempo">
+                    <button type="button" class="link-button" (click)="openTimeline(event.reservationId)" title="Ver historial de la reserva">
                       #{{ event.reservationId }}
                     </button>
                   </td>
@@ -167,7 +178,8 @@
                     </span>
                   </td>
                   <td>{{ event.userEmail }}</td>
-                  <td class="muted trace">{{ event.traceId ? event.traceId.slice(0, 8) : '—' }}</td>
+                  <td>{{ actorLabel(event) }}</td>
+                  <td class="trace">{{ event.sourceIp || '—' }}</td>
                 </tr>
               }
             </tbody>

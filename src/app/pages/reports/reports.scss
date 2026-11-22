@@ -1,10 +1,57 @@
-.stat-date {
+.stat-small {
   font-size: 24px !important;
 }
 
-// Gráfico de barras de una sola serie: barras delgadas, extremo superior
-// redondeado (4px) apoyado en la línea base, sin leyenda (el título la nombra)
-// y tooltip al pasar el mouse o enfocar con teclado.
+// ---------- Controles del panel en vivo ----------
+.live-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+
+  .field {
+    min-width: 170px;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stream-status {
+  margin: 0 0 18px;
+  color: #5f718a;
+  font-size: 14px;
+}
+
+// Punto verde que "late" mientras el panel se actualiza solo.
+.live-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  background: #10a36b;
+  border-radius: 50%;
+  animation: pulse 1.6s ease-in-out infinite;
+
+  &.paused {
+    background: #9aa9ba;
+    animation: none;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+// ---------- Gráficos de barras (una serie, tooltip al pasar el mouse) ----------
 .chart {
   margin: 28px 0 0;
 
@@ -22,6 +69,11 @@
   gap: 2px;
   height: 220px;
   padding-top: 26px;
+
+  &.hours {
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    gap: 1px;
+  }
 }
 
 .chart-column {
@@ -60,7 +112,6 @@
 
 .chart-bar {
   width: min(28px, 60%);
-  min-height: 0;
   background: #07877f;
   border-radius: 4px 4px 0 0;
   transition: height 0.3s ease;
@@ -73,6 +124,7 @@
 
 .chart-label {
   padding: 8px 0 0;
+  overflow: hidden;
   color: #607088;
   font-size: 12px;
   text-align: center;
@@ -99,4 +151,80 @@
   pointer-events: none;
   transform: translateX(-50%);
   transition: opacity 0.15s ease;
+}
+
+// ---------- Unidades más demandadas y actividad ----------
+.live-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 28px;
+  margin-top: 28px;
+
+  h3 {
+    margin: 0 0 14px;
+    font-size: 19px;
+  }
+}
+
+.unit-list,
+.activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unit-list {
+  display: grid;
+  gap: 14px;
+}
+
+.unit-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.unit-bar {
+  height: 8px;
+  background: #e4ebf2;
+  border-radius: 999px;
+
+  div {
+    height: 100%;
+    background: #07877f;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+}
+
+.activity-list {
+  max-height: 430px;
+  overflow-y: auto;
+
+  li {
+    padding: 12px 0;
+    border-bottom: 1px solid #e3eaf1;
+  }
+
+  p {
+    margin: 6px 0 4px;
+  }
+}
+
+.activity-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  // En pantallas chicas se muestra solo una etiqueta de hora por medio.
+  .chart-plot.hours .chart-column:nth-child(even) .chart-label {
+    visibility: hidden;
+  }
 }

@@ -17,6 +17,15 @@ export interface AuditEvent {
   occurredAt: string;
   receivedAt: string;
   traceId: string | null;
+  /** Quién hizo el cambio (correo del usuario del token). */
+  performedBy: string | null;
+  /** Rol con que lo hizo: CLIENTE, OPERADOR o ADMIN. */
+  performedRole: string | null;
+  /** Desde dónde: IP que reenvía el BFF en X-Forwarded-For. */
+  sourceIp: string | null;
+  /** De qué partición y offset de reservations.events se leyó. */
+  kafkaPartition: number | null;
+  kafkaOffset: number | null;
 }
 
 export interface AuditSummary {
@@ -30,6 +39,9 @@ export interface AuditFilters {
   reservationId?: number | null;
   status?: ReservationStatus | '';
   userEmail?: string;
+  /** Fechas yyyy-MM-dd (input type="date"). */
+  from?: string;
+  to?: string;
   limit?: number;
 }
 
@@ -56,6 +68,14 @@ export class AuditApiService {
 
     if (filters.userEmail?.trim()) {
       params = params.set('userEmail', filters.userEmail.trim());
+    }
+
+    if (filters.from) {
+      params = params.set('from', filters.from);
+    }
+
+    if (filters.to) {
+      params = params.set('to', filters.to);
     }
 
     return this.http.get<AuditEvent[]>(`${this.baseUrl}/events`, { params });

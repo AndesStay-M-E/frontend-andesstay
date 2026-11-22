@@ -16,10 +16,13 @@ import {
   RESERVATION_STATUSES,
   reservationStatusBadge,
   reservationStatusLabel,
+  roleLabel,
 } from '../../shared/labels';
 
 /**
  * Auditoría y trazabilidad de reservas (ADMIN y AUDITOR).
+ * Muestra qué cambió, quién lo hizo, cuándo y desde dónde (IP).
+ * La partición/offset de Kafka y el traceId vienen en AuditEvent, pero no se muestran.
  */
 @Component({
   selector: 'app-audit',
@@ -55,7 +58,7 @@ export class Audit implements OnInit {
       next: (summary) => this.summary.set(summary),
       error: (error) =>
         this.errorMessage.set(
-          httpErrorMessage(error, 'No fue posible cargar el resumen de auditoría.'),
+          httpErrorMessage(error, 'No pudimos cargar el resumen de auditoría.'),
         ),
     });
   }
@@ -71,7 +74,7 @@ export class Audit implements OnInit {
         next: (events) => this.events.set(events),
         error: (error) =>
           this.errorMessage.set(
-            httpErrorMessage(error, 'No fue posible consultar la auditoría.'),
+            httpErrorMessage(error, 'No pudimos cargar el historial de cambios.'),
           ),
       });
   }
@@ -108,7 +111,7 @@ export class Audit implements OnInit {
         error: (error) => {
           this.timeline.set([]);
           this.errorMessage.set(
-            httpErrorMessage(error, 'No fue posible cargar la línea de tiempo.'),
+            httpErrorMessage(error, 'No pudimos cargar el historial de la reserva.'),
           );
         },
       });
@@ -119,11 +122,24 @@ export class Audit implements OnInit {
     this.timeline.set([]);
   }
 
+  /** "ana@andesstay.cl (Administrador)"; los eventos antiguos no traen quién lo hizo. */
+  actorLabel(event: AuditEvent): string {
+    if (!event.performedBy) {
+      return '—';
+    }
+
+    return event.performedRole
+      ? `${event.performedBy} (${roleLabel(event.performedRole)})`
+      : event.performedBy;
+  }
+
   private emptyFilters(): AuditFilters {
     return {
       reservationId: null,
       status: '',
       userEmail: '',
+      from: '',
+      to: '',
       limit: 100,
     };
   }

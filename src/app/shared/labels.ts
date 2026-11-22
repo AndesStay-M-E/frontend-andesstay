@@ -71,3 +71,18 @@ const ACTION_LABELS: Record<HousekeepingAction, string> = {
 export function housekeepingActionLabel(action: HousekeepingAction): string {
   return ACTION_LABELS[action] ?? action;
 }
+
+/** Nombres amigables de los roles de Entra ID (el token trae ADMIN, OPERADOR, etc.). */
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Administrador',
+  OPERADOR: 'Recepción',
+  CLIENTE: 'Cliente',
+  AUDITOR: 'Auditor',
+};
+
+export function roleLabel(role: string | null | undefined): string {
+  if (!role) {
+    return '';
+  }
+  return ROLE_LABELS[role.toUpperCase()] ?? role;
+}

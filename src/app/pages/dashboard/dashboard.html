@@ -9,107 +9,60 @@
 
 <main class="dashboard">
   <section class="welcome">
-    <p>Sesión iniciada correctamente</p>
-    <h2>Bienvenido, {{ name }}</h2>
+    <p>Te damos la bienvenida</p>
+    <h2>Hola, {{ name }}</h2>
     <span>{{ username }}</span>
 
     <div class="roles">
       @for (role of roles; track role) {
-        <span>{{ role }}</span>
+        <span>{{ roleName(role) }}</span>
       }
     </div>
 
-    <div class="token-claims">
-  <p>
-    <strong>Roles del token:</strong>
-    {{ roles.length > 0 ? roles.join(', ') : 'Sin roles asignados' }}
-  </p>
-
-  <p>
-    <strong>Scopes concedidos:</strong>
-    {{
-      scopes.length > 0
-        ? scopes.join(', ')
-        : 'Esperando access token...'
-    }}
-  </p>
-
-  @if (tokenError) {
-    <p class="token-error">
-      {{ tokenError }}
-    </p>
-  }
-</div>
+    @if (tokenError) {
+      <p class="token-error">{{ tokenError }}</p>
+    }
   </section>
 
   <section class="menu">
-    <h3>Módulos disponibles</h3>
+    <h3>¿Qué quieres hacer hoy?</h3>
+
+    @if (loadingRoles) {
+      <p class="menu-empty">Cargando tus módulos...</p>
+    } @else if (roles.length === 0) {
+      <p class="menu-empty">
+        Tu cuenta aún no tiene un perfil asignado. Pide al administrador que te habilite el acceso.
+      </p>
+    }
 
     <div class="menu-grid">
       @if (hasAnyRole('ADMIN', 'OPERADOR', 'CLIENTE')) {
         <a routerLink="/reservations">
           <strong>Reservas</strong>
-          <span>Crear, consultar y administrar reservas.</span>
+          <span>Crea, consulta y administra reservas.</span>
         </a>
       }
 
       @if (hasAnyRole('ADMIN', 'OPERADOR')) {
         <a routerLink="/catalog">
           <strong>Catálogo</strong>
-          <span>Alojamientos y tickets de limpieza.</span>
+          <span>Alojamientos, precios y tickets de limpieza.</span>
         </a>
       }
 
       @if (hasAnyRole('ADMIN')) {
         <a routerLink="/reports">
           <strong>Reportería</strong>
-          <span>Vouchers emitidos e indicadores.</span>
+          <span>Indicadores en tiempo real, vouchers y boletas.</span>
         </a>
       }
 
       @if (hasAnyRole('ADMIN', 'AUDITOR')) {
         <a routerLink="/audit">
           <strong>Auditoría</strong>
-          <span>Timeline y trazabilidad de las reservas.</span>
+          <span>Quién hizo cada cambio en las reservas, cuándo y desde dónde.</span>
         </a>
       }
     </div>
-  </section>
-
-  <section class="api-validation">
-    <h3>Validación de seguridad del BFF</h3>
-
-    <div class="validation-actions">
-      <button type="button" (click)="validateToken()">
-        Validar JWT
-      </button>
-
-      <button type="button" (click)="validateAdminAccess()">
-        Probar acceso ADMIN
-      </button>
-    </div>
-
-    @if (apiStatus) {
-      <div
-        class="api-result"
-        [class.success]="apiStatus === 200"
-        [class.denied]="apiStatus !== 200"
-      >
-        <strong>HTTP {{ apiStatus }}</strong>
-        <span>{{ apiMessage }}</span>
-      </div>
-    }
-
-    @if (apiUser) {
-      <div class="token-data">
-        <p><strong>Usuario:</strong> {{ apiUser.username }}</p>
-        <p><strong>Roles:</strong> {{ apiUser.roles.join(', ') }}</p>
-        <p><strong>Issuer:</strong> {{ apiUser.issuer }}</p>
-        <p>
-          <strong>Audience:</strong>
-          {{ apiUser.audience.join(', ') }}
-        </p>
-      </div>
-    }
   </section>
 </main>

@@ -1,59 +1,58 @@
-# FrontendAndesstay
+# frontend-andesstay
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Frontend de AndesStay hecho en **Angular 22** con login de **Azure AD (MSAL)**.
 
-## Development server
+## Arquitectura CSR (Client-Side Rendering)
 
-To start a local development server, run:
+La aplicación es una **SPA**: `npm run build` genera solo archivos estáticos (HTML, JS y CSS) y
+**todo se dibuja en el navegador**. No hay servidor Node en producción:
 
-```bash
-ng serve
+```
+Navegador ──► CloudFront ──► S3 (index.html + main-xxxx.js + styles-xxxx.css)
+    │
+    ├──► login.microsoftonline.com   (MSAL: login con redirección, entrega el token JWT)
+    └──► API Gateway ──► BFF          (HttpClient + MsalInterceptor agregan "Authorization: Bearer <token>")
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- El **routing** (`/dashboard`, `/reservations`, `/reports`, ...) lo hace Angular en el navegador.
+  Por eso CloudFront (o Amplify) debe devolver `index.html` cuando se pide una ruta que no existe como archivo.
+- El `redirectUri` de MSAL es el **origen donde está abierta la app** (`window.location.origin`):
+  `http://localhost:4200` en desarrollo y la URL de CloudFront/Amplify en producción. Cada una debe estar
+  registrada en Azure como plataforma **Single-page application** (ver la guía de AWS).
 
-## Code scaffolding
+## Pantallas
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+| Ruta | Roles | Qué muestra |
+|---|---|---|
+| `/dashboard` | todos | Bienvenida, perfil del usuario (Cliente, Recepción, Administrador, Auditor) y menú según el rol |
+| `/reservations` | CLIENTE, OPERADOR, ADMIN | Crear, confirmar, cancelar y avanzar reservas (OPERADOR y ADMIN ven todas) |
+| `/catalog` | OPERADOR, ADMIN | Alojamientos, precios y tickets de limpieza (se crean solos al confirmar y al hacer checkout) |
+| `/reports` | ADMIN | **Indicadores en tiempo real** (se actualizan cada 5 s), gráficos, última actividad, vouchers y boletas |
+| `/audit` | ADMIN, AUDITOR | Historial de cambios: quién, rol, cuándo y desde qué IP; filtros por reserva, estado, correo y fecha |
 
-```bash
-ng generate component component-name
+> La interfaz está pensada para el cliente final: no muestra tópicos, colas, particiones, offsets ni traceId.
+> Esos datos se revisan en Kafka UI, en la consola de RabbitMQ y con `ms-andesstay-kafka-admin`.
+
+## Desarrollo
+
+Requisitos: Node.js 22 y el backend levantado (`infra-andesstay-messaging`, BFF en `http://localhost:8080`).
+
+```powershell
+npm install
+npm start            # http://localhost:4200
+npm test             # pruebas con Vitest
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Build de producción
 
-```bash
-ng generate --help
+```powershell
+npm run build        # usa src/environments/environment.production.ts
 ```
 
-## Building
+Los archivos quedan en **`dist/frontend-andesstay/browser/`**: eso es lo que se sube a S3.
 
-To build the project run:
+La URL de la API está en `src/environments/environment.production.ts` (`apiUrl`). Si se crea un API Gateway
+nuevo, se cambia esa línea y se vuelve a compilar.
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+El paso a paso completo (S3 + CloudFront o Amplify, Azure y API Gateway) está en
+`infra-andesstay-messaging/docs/GUIA-DESPLIEGUE-AWS-CSR.md`.

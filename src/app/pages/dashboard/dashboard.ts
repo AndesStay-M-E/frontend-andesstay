@@ -10,14 +10,9 @@ import { RouterLink } from '@angular/router';
 import { MsalService } from '@azure/msal-angular';
 
 import {
-  AdminResponse,
-  AuthenticatedUserResponse,
-  BffApiService,
-} from '../../services/bff-api.service';
-
-import {
   decodeAccessToken,
 } from '../../auth/token-claims';
+import { roleLabel } from '../../shared/labels';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,17 +23,17 @@ import {
 export class Dashboard implements OnInit {
   name = '';
   username = '';
+  /** Roles del token (ADMIN, OPERADOR, CLIENTE, AUDITOR): deciden qué módulos se ven. */
   roles: string[] = [];
+  /** Scopes del token: se guardan, pero no se muestran al usuario. */
   scopes: string[] = [];
+  loadingRoles = true;
   tokenError = '';
 
-  apiUser?: AuthenticatedUserResponse;
-  apiMessage = '';
-  apiStatus?: number;
+  readonly roleName = roleLabel;
 
   constructor(
     private readonly authService: MsalService,
-    private readonly bffApi: BffApiService,
     private readonly changeDetector: ChangeDetectorRef,
   ) {}
 
@@ -48,6 +43,7 @@ export class Dashboard implements OnInit {
       this.authService.instance.getAllAccounts()[0];
 
     if (!activeAccount) {
+      this.loadingRoles = false;
       return;
     }
 
@@ -65,66 +61,14 @@ export class Dashboard implements OnInit {
     );
   }
 
-  validateToken(): void {
-    this.apiMessage = 'Validando token...';
-    this.apiStatus = undefined;
-
-    this.bffApi.getCurrentUser().subscribe({
-      next: (response: AuthenticatedUserResponse) => {
-        this.apiUser = response;
-        this.apiStatus = 200;
-        this.apiMessage =
-          'JWT válido: acceso autorizado por el BFF.';
-
-        this.changeDetector.detectChanges();
-      },
-
-      error: (error) => {
-        this.apiUser = undefined;
-        this.apiStatus = error.status;
-        this.apiMessage =
-          'El BFF rechazó la solicitud.';
-
-        this.changeDetector.detectChanges();
-      },
-    });
-  }
-
-  validateAdminAccess(): void {
-    this.apiMessage =
-      'Comprobando rol ADMIN...';
-
-    this.apiStatus = undefined;
-
-    this.bffApi.getAdminStatus().subscribe({
-      next: (response: AdminResponse) => {
-        this.apiStatus = 200;
-        this.apiMessage = response.message;
-
-        this.changeDetector.detectChanges();
-      },
-
-      error: (error) => {
-        this.apiStatus = error.status;
-
-        this.apiMessage =
-          error.status === 403
-            ? 'Acceso rechazado: el usuario no posee el rol ADMIN.'
-            : `No fue posible validar el acceso. HTTP ${error.status}`;
-
-        this.changeDetector.detectChanges();
-      },
-    });
-  }
-
   private loadAccessTokenClaims(): void {
     const account =
       this.authService.instance.getActiveAccount() ??
       this.authService.instance.getAllAccounts()[0];
 
     if (!account) {
-      this.tokenError =
-        'No existe una cuenta activa.';
+      this.loadingRoles = false;
+      this.tokenError = 'No encontramos una sesión activa. Vuelve a iniciar sesión.';
       return;
     }
 
@@ -147,6 +91,7 @@ export class Dashboard implements OnInit {
               : [];
 
           this.tokenError = '';
+          this.loadingRoles = false;
 
           this.changeDetector.detectChanges();
         },
@@ -159,9 +104,10 @@ export class Dashboard implements OnInit {
 
           this.roles = [];
           this.scopes = [];
+          this.loadingRoles = false;
 
           this.tokenError =
-            'No fue posible leer los claims del access token.';
+            'No pudimos cargar tus permisos. Cierra sesión y vuelve a ingresar.';
 
           this.changeDetector.detectChanges();
         },

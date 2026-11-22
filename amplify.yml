@@ -1,0 +1,21 @@
+# Build del frontend en AWS Amplify Hosting (opción B de la guía de despliegue CSR).
+# Amplify solo publica archivos estáticos: la app se dibuja completa en el navegador.
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm install 22
+        - nvm use 22
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    # Angular (builder "application") deja los archivos en dist/<proyecto>/browser
+    baseDirectory: dist/frontend-andesstay/browser
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*

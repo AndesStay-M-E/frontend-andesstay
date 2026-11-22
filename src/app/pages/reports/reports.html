@@ -2,13 +2,158 @@
   <header class="page-header">
     <div>
       <h1>Reportería</h1>
-      <p>Vouchers emitidos por reservas confirmadas e indicadores.</p>
+      <p>Indicadores del negocio, vouchers y boletas emitidas.</p>
     </div>
 
-    <a routerLink="/dashboard" class="back-button">Volver al dashboard</a>
+    <a routerLink="/dashboard" class="back-button">Volver al inicio</a>
   </header>
 
   <main class="content">
+    <!-- ===================== INDICADORES EN TIEMPO REAL ===================== -->
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Indicadores en tiempo real</h2>
+          <p>Reservas, ocupación y tiempos de atención del período elegido.</p>
+        </div>
+
+        <div class="live-controls">
+          <div class="field">
+            <label for="kpiRange">Período</label>
+            <select id="kpiRange" name="kpiRange" [ngModel]="range" (ngModelChange)="changeRange($event)">
+              @for (option of ranges; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+
+          <label class="toggle">
+            <input type="checkbox" name="autoRefresh" [ngModel]="autoRefresh" (ngModelChange)="setAutoRefresh($event)" />
+            Actualizar automáticamente
+          </label>
+
+          <button type="button" class="secondary-button" [disabled]="liveLoading()" (click)="loadLive(true)">
+            {{ liveLoading() ? 'Actualizando...' : 'Actualizar ahora' }}
+          </button>
+        </div>
+      </div>
+
+      @if (liveError()) {
+        <div class="alert error" role="alert">{{ liveError() }}</div>
+      }
+
+      @if (kpis(); as k) {
+        <p class="stream-status">
+          <span class="live-dot" [class.paused]="!autoRefresh"></span>
+          @if (lastUpdate()) {
+            {{ autoRefresh ? 'Actualizado hace unos segundos' : 'Actualización automática en pausa' }}
+            · {{ lastUpdate() | date: 'HH:mm:ss' }}
+          }
+        </p>
+
+        <div class="stats">
+          <div class="stat">
+            <span>Reservas creadas</span>
+            <strong>{{ k.reservationsCreated }}</strong>
+            <small>{{ k.reservationsCancelled }} canceladas en el período</small>
+          </div>
+          <div class="stat">
+            <span>Confirmadas</span>
+            <strong>{{ k.reservationsConfirmed }}</strong>
+            <small>{{ k.confirmedAmount | currency: 'CLP' : 'symbol-narrow' : '1.0-0' }} confirmados</small>
+          </div>
+          <div class="stat">
+            <span>Ocupación activa</span>
+            <strong>{{ k.activeOccupancy }}</strong>
+            <small>alojamientos con huéspedes</small>
+          </div>
+          <div class="stat">
+            <span>Llegadas pendientes</span>
+            <strong>{{ k.pendingCheckins }}</strong>
+            <small>check-in por atender</small>
+          </div>
+          <div class="stat">
+            <span>Tiempo de confirmación</span>
+            <strong class="stat-small">{{ formatMinutes(k.averageConfirmationMinutes) }}</strong>
+            <small>promedio desde que se crea hasta que se confirma</small>
+          </div>
+          <div class="stat">
+            <span>Tiempo de ciclo</span>
+            <strong class="stat-small">{{ formatMinutes(k.averageCycleMinutes) }}</strong>
+            <small>promedio desde la creación hasta el checkout ({{ k.checkouts }} {{ k.checkouts === 1 ? 'estadía' : 'estadías' }})</small>
+          </div>
+        </div>
+
+        <figure class="chart">
+          <figcaption>Reservas creadas por hora · últimas 24 horas</figcaption>
+
+          <div class="chart-plot hours" role="list">
+            @for (bar of hourBars(); track bar.key) {
+              <div
+                class="chart-column"
+                role="listitem"
+                tabindex="0"
+                [attr.aria-label]="bar.label + ': ' + bar.count + ' reservas'"
+              >
+                <span class="chart-tooltip">{{ bar.count }} {{ bar.count === 1 ? 'reserva' : 'reservas' }}</span>
+                <div class="chart-bar-area">
+                  <div class="chart-bar" [class.empty]="bar.count === 0" [style.height.%]="bar.heightPercent"></div>
+                </div>
+                <span class="chart-label" [class.today]="bar.highlight">{{ bar.label }}</span>
+              </div>
+            }
+          </div>
+        </figure>
+
+        <div class="live-grid">
+          <div>
+            <h3>Alojamientos más reservados</h3>
+            @if (topUnits().length === 0) {
+              <p class="state-message">Aún no hay reservas en este período.</p>
+            } @else {
+              <ol class="unit-list">
+                @for (unit of topUnits(); track unit.accommodationId) {
+                  <li>
+                    <div class="unit-row">
+                      <span>{{ unitName(unit.accommodationId) }}</span>
+                      <strong>{{ unit.reservations }}</strong>
+                    </div>
+                    <div class="unit-bar"><div [style.width.%]="unitBarPercent(unit)"></div></div>
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+
+          <div>
+            <h3>Última actividad</h3>
+            @if (activity().length === 0) {
+              <p class="state-message">Aún no hay movimientos en las reservas.</p>
+            } @else {
+              <ul class="activity-list">
+                @for (item of activity(); track item.partition + '-' + item.offset) {
+                  <li>
+                    <div class="activity-top">
+                      <span class="badge" [ngClass]="statusBadge(item.action)">{{ statusLabel(item.action) }}</span>
+                      <strong>Reserva #{{ item.reservationId }}</strong>
+                      <span class="muted">{{ item.occurredAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    <p>{{ item.description }}</p>
+                    <small class="muted">
+                      {{ item.performedBy || 'Sistema' }}{{ item.performedRole ? ' (' + roleName(item.performedRole) + ')' : '' }}
+                    </small>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+      } @else if (!liveError()) {
+        <p class="state-message">Cargando indicadores...</p>
+      }
+    </section>
+
+    <!-- ===================== VOUCHERS Y BOLETAS ===================== -->
     @if (errorMessage()) {
       <div class="alert error" role="alert">{{ errorMessage() }}</div>
     }
@@ -16,18 +161,21 @@
     <section class="card">
       <div class="section-heading">
         <div>
-          <h2>Resumen</h2>
-          <p>Los vouchers se generan automáticamente al confirmar una reserva (RabbitMQ).</p>
+          <h2>Vouchers y boletas</h2>
+          <p>
+            El voucher se emite al confirmar la reserva y la boleta al registrar el checkout.
+            Pueden tardar unos segundos en aparecer.
+          </p>
         </div>
-        <button type="button" class="secondary-button" (click)="refresh()">Actualizar</button>
+        <button type="button" class="secondary-button" (click)="refreshVouchers()">Actualizar documentos</button>
       </div>
 
       @if (loadingSummary() && !summary()) {
-        <p class="state-message">Cargando indicadores...</p>
+        <p class="state-message">Cargando resumen de documentos...</p>
       } @else if (summary(); as s) {
         <div class="stats">
           <div class="stat">
-            <span>Vouchers emitidos</span>
+            <span>Documentos emitidos</span>
             <strong>{{ s.totalVouchers }}</strong>
             <small>en total</small>
           </div>
@@ -39,35 +187,31 @@
           <div class="stat">
             <span>Clientes distintos</span>
             <strong>{{ s.distinctRecipients }}</strong>
-            <small>con al menos un voucher</small>
+            <small>con al menos un documento</small>
           </div>
           <div class="stat">
-            <span>Último voucher</span>
-            <strong class="stat-date">{{ s.lastVoucherAt ? (s.lastVoucherAt | date: 'dd/MM HH:mm') : '—' }}</strong>
-            <small>{{ s.lastVoucherAt ? (s.lastVoucherAt | date: 'yyyy') : 'sin emisiones' }}</small>
+            <span>Último documento</span>
+            <strong class="stat-small">{{ s.lastVoucherAt ? (s.lastVoucherAt | date: 'dd/MM/yyyy') : '—' }}</strong>
+            <small>{{ s.lastVoucherAt ? 'a las ' + (s.lastVoucherAt | date: 'HH:mm') : 'sin emisiones' }}</small>
           </div>
         </div>
 
         <figure class="chart">
-          <figcaption>Vouchers por día · últimos 7 días</figcaption>
+          <figcaption>Documentos por día · últimos 7 días</figcaption>
 
           <div class="chart-plot" role="list">
-            @for (bar of bars(); track bar.date) {
+            @for (bar of dayBars(); track bar.key) {
               <div
                 class="chart-column"
                 role="listitem"
                 tabindex="0"
-                [attr.aria-label]="bar.label + ': ' + bar.count + ' vouchers'"
+                [attr.aria-label]="bar.label + ': ' + bar.count + ' documentos'"
               >
-                <span class="chart-tooltip">{{ bar.count }} {{ bar.count === 1 ? 'voucher' : 'vouchers' }}</span>
+                <span class="chart-tooltip">{{ bar.count }} {{ bar.count === 1 ? 'documento' : 'documentos' }}</span>
                 <div class="chart-bar-area">
-                  <div
-                    class="chart-bar"
-                    [class.empty]="bar.count === 0"
-                    [style.height.%]="bar.heightPercent"
-                  ></div>
+                  <div class="chart-bar" [class.empty]="bar.count === 0" [style.height.%]="bar.heightPercent"></div>
                 </div>
-                <span class="chart-label" [class.today]="bar.isToday">{{ bar.label }}</span>
+                <span class="chart-label" [class.today]="bar.highlight">{{ bar.label }}</span>
               </div>
             }
           </div>
@@ -78,7 +222,7 @@
     <section class="card">
       <div class="section-heading">
         <div>
-          <h2>Vouchers</h2>
+          <h2>Documentos emitidos</h2>
           <p>{{ vouchers().length }} {{ vouchers().length === 1 ? 'resultado' : 'resultados' }}</p>
         </div>
       </div>
@@ -88,16 +232,16 @@
           <label for="reservationFilter">N° de reserva</label>
           <input id="reservationFilter" name="reservationFilter" type="number" min="1" placeholder="Todas" [(ngModel)]="reservationFilter" />
         </div>
-        <button type="submit" class="primary-button">Buscar</button>
+        <button type="submit" class="primary-button">Buscar documentos</button>
         @if (reservationFilter) {
-          <button type="button" class="secondary-button" (click)="clearFilter()">Limpiar</button>
+          <button type="button" class="secondary-button" (click)="clearFilter()">Limpiar filtro</button>
         }
       </form>
 
       @if (loadingVouchers()) {
-        <p class="state-message">Cargando vouchers...</p>
+        <p class="state-message">Cargando documentos...</p>
       } @else if (vouchers().length === 0) {
-        <p class="state-message">No hay vouchers. Confirma una reserva para generar el primero.</p>
+        <p class="state-message">{{ reservationFilter ? 'No encontramos documentos para esa reserva.' : 'Aún no hay documentos emitidos. El primer voucher aparecerá al confirmar una reserva.' }}</p>
       } @else {
         <div class="table-wrapper">
           <table>
@@ -105,7 +249,7 @@
               <tr>
                 <th>Código</th>
                 <th>Reserva</th>
-                <th>Destinatario</th>
+                <th>Cliente</th>
                 <th>Tipo</th>
                 <th>Emitido</th>
               </tr>
@@ -116,7 +260,11 @@
                   <td><strong>{{ voucher.code }}</strong></td>
                   <td>#{{ voucher.reservationId }}</td>
                   <td>{{ voucher.recipient }}</td>
-                  <td><span class="badge badge-info">Voucher de reserva</span></td>
+                  <td>
+                    <span class="badge" [ngClass]="voucher.documentType === 'BOLETA' ? 'badge-purple' : 'badge-info'">
+                      {{ documentLabel(voucher.documentType) }}
+                    </span>
+                  </td>
                   <td>{{ voucher.generatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                 </tr>
               }

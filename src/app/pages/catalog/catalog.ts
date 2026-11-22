@@ -81,7 +81,7 @@ export class Catalog implements OnInit {
         next: (accommodations) => this.accommodations.set(accommodations),
         error: (error) =>
           this.errorMessage.set(
-            httpErrorMessage(error, 'No fue posible cargar el catálogo.'),
+            httpErrorMessage(error, 'No pudimos cargar los alojamientos.'),
           ),
       });
   }
@@ -96,7 +96,7 @@ export class Catalog implements OnInit {
         next: (tickets) => this.tickets.set(tickets),
         error: (error) =>
           this.errorMessage.set(
-            httpErrorMessage(error, 'No fue posible cargar los tickets.'),
+            httpErrorMessage(error, 'No pudimos cargar los tickets de limpieza.'),
           ),
       });
   }
@@ -127,14 +127,14 @@ export class Catalog implements OnInit {
         this.message.set(
           id
             ? `Alojamiento "${saved.name}" actualizado.`
-            : `Alojamiento "${saved.name}" creado con ID ${saved.id}.`,
+            : `Alojamiento "${saved.name}" creado.`,
         );
         this.cancelEdit();
         this.loadAccommodations();
       },
       error: (error) =>
         this.errorMessage.set(
-          httpErrorMessage(error, 'No fue posible guardar el alojamiento.'),
+          httpErrorMessage(error, 'No pudimos guardar el alojamiento.'),
         ),
     });
   }
@@ -177,7 +177,7 @@ export class Catalog implements OnInit {
       },
       error: (error) =>
         this.errorMessage.set(
-          httpErrorMessage(error, 'No fue posible desactivar el alojamiento.'),
+          httpErrorMessage(error, 'No pudimos desactivar el alojamiento.'),
         ),
     });
   }
@@ -192,7 +192,7 @@ export class Catalog implements OnInit {
       },
       error: (error) =>
         this.errorMessage.set(
-          httpErrorMessage(error, 'No fue posible completar el ticket.'),
+          httpErrorMessage(error, 'No pudimos marcar el ticket como completado.'),
         ),
     });
   }

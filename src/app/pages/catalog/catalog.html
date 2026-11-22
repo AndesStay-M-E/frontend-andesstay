@@ -5,7 +5,7 @@
       <p>Alojamientos disponibles y tickets de preparación y limpieza.</p>
     </div>
 
-    <a routerLink="/dashboard" class="back-button">Volver al dashboard</a>
+    <a routerLink="/dashboard" class="back-button">Volver al inicio</a>
   </header>
 
   <main class="content">
@@ -87,13 +87,13 @@
           <h2>Alojamientos</h2>
           <p>{{ activeCount() }} activos de {{ accommodations().length }} registrados.</p>
         </div>
-        <button type="button" class="secondary-button" (click)="loadAccommodations()">Actualizar</button>
+        <button type="button" class="secondary-button" (click)="loadAccommodations()">Actualizar lista</button>
       </div>
 
       @if (loadingAccommodations()) {
         <p class="state-message">Cargando alojamientos...</p>
       } @else if (accommodations().length === 0) {
-        <p class="state-message">Aún no hay alojamientos registrados.</p>
+        <p class="state-message">Aún no hay alojamientos. Crea el primero con el formulario de arriba.</p>
       } @else {
         <div class="accommodations-grid">
           @for (item of accommodations(); track item.id) {
@@ -140,7 +140,7 @@
       <div class="section-heading">
         <div>
           <h2>Tickets de limpieza</h2>
-          <p>Se crean automáticamente al confirmar una reserva y al hacer checkout (RabbitMQ).</p>
+          <p>Se crean automáticamente al confirmar una reserva (preparar la habitación) y al registrar el checkout (limpiarla). Pueden tardar unos segundos en aparecer.</p>
         </div>
         @if (ticketFilter() === 'PENDIENTE') {
           <span class="badge badge-warning">{{ pendingCount() }} pendientes</span>
@@ -156,13 +156,13 @@
             <option value="">Todos</option>
           </select>
         </div>
-        <button type="button" class="secondary-button" (click)="loadTickets()">Actualizar</button>
+        <button type="button" class="secondary-button" (click)="loadTickets()">Actualizar tickets</button>
       </div>
 
       @if (loadingTickets()) {
         <p class="state-message">Cargando tickets...</p>
       } @else if (tickets().length === 0) {
-        <p class="state-message">No hay tickets para este filtro.</p>
+        <p class="state-message">{{ ticketFilter() === 'PENDIENTE' ? 'Todo al día: no hay tickets de limpieza pendientes.' : 'No hay tickets para este filtro.' }}</p>
       } @else {
         <div class="table-wrapper">
           <table>
@@ -174,7 +174,7 @@
                 <th>Reserva</th>
                 <th>Estadía</th>
                 <th>Estado</th>
-                <th></th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -194,7 +194,7 @@
                     @if (ticket.status === 'PENDIENTE') {
                       <button type="button" class="primary-button small" (click)="completeTicket(ticket)">Marcar completado</button>
                     } @else {
-                      <span class="muted">{{ ticket.completedAt | date: 'dd/MM HH:mm' }}</span>
+                      <span class="muted">{{ ticket.completedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
                     }
                   </td>
                 </tr>

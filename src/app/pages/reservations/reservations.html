@@ -2,11 +2,11 @@
   <header class="page-header">
     <div>
       <h1>Gestión de reservas</h1>
-      <p>Crea y administra las reservas de AndesStay.</p>
+      <p>Crea nuevas reservas y revisa el estado de cada estadía.</p>
     </div>
 
     <a routerLink="/dashboard" class="back-button">
-      Volver al dashboard
+      Volver al inicio
     </a>
   </header>
 
@@ -15,7 +15,7 @@
       <div class="section-heading">
         <div>
           <h2>Nueva reserva</h2>
-          <p>Ingresa los datos de la estadía.</p>
+          <p>Elige el alojamiento, las fechas y la cantidad de huéspedes.</p>
         </div>
       </div>
 
@@ -38,7 +38,7 @@
                 }
               </select>
             } @else {
-              <p class="state-message">No hay alojamientos disponibles. Recarga la página para consultar sus precios.</p>
+              <p class="state-message">Por ahora no hay alojamientos disponibles. Intenta nuevamente en unos minutos.</p>
             }
           </div>
 
@@ -79,7 +79,7 @@
           </div>
 
           <div class="field field-wide">
-            <label>Valor de la reserva (calculado automáticamente)</label>
+            <label>Valor de la reserva</label>
             <div class="price-summary" aria-live="polite">
               @if (selectedAccommodation) {
                 <span>Precio por noche: {{ selectedAccommodation.pricePerNight | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
@@ -97,7 +97,7 @@
           class="primary-button"
           [disabled]="saving || reservationForm.invalid || totalAmount <= 0 || !selectedAccommodation"
         >
-          {{ saving ? 'Guardando...' : 'Crear reserva' }}
+          {{ saving ? 'Creando reserva...' : 'Crear reserva' }}
         </button>
       </form>
     </section>
@@ -113,17 +113,17 @@
     <section class="card">
       <div class="section-heading">
         <div>
-          <h2>{{ isAdmin ? 'Todas las reservas' : 'Mis reservas' }}</h2>
-          <p *ngIf="isAdmin">
-            Vista administrativa de las reservas registradas.
+          <h2>{{ isStaff ? 'Todas las reservas' : 'Mis reservas' }}</h2>
+          <p *ngIf="isStaff">
+            Confirma reservas y registra el check-in y el checkout de los huéspedes.
           </p>
-          <p *ngIf="!isAdmin">
-            Consulta el estado de tus reservas.
+          <p *ngIf="!isStaff">
+            Revisa el estado de tus reservas y cancélalas si lo necesitas.
           </p>
         </div>
 
         <span class="role-badge">
-          {{ isAdmin ? 'ADMIN' : 'CLIENTE' }}
+          {{ roleLabel }}
         </span>
       </div>
 
@@ -135,7 +135,7 @@
         *ngIf="!loading && reservations.length === 0"
         class="state-message"
       >
-        No existen reservas registradas.
+        {{ isStaff ? 'Aún no hay reservas registradas.' : 'Aún no tienes reservas. Crea la primera desde el formulario.' }}
       </p>
 
       <div
@@ -163,8 +163,8 @@
           </div>
 
           <dl>
-            <div *ngIf="isAdmin">
-              <dt>Usuario</dt>
+            <div *ngIf="isStaff">
+              <dt>Huésped</dt>
               <dd>{{ reservation.userEmail }}</dd>
             </div>
 
@@ -194,21 +194,21 @@
 
           <div class="actions">
             <button
-              *ngIf="isAdmin && reservation.status === 'CREADA'"
+              *ngIf="isStaff && reservation.status === 'CREADA'"
               type="button"
               class="confirm-button"
               (click)="confirmReservation(reservation.id)"
             >
-              Confirmar
+              Confirmar reserva
             </button>
 
             <button
-              *ngIf="isAdmin && nextStatus(reservation.status)"
+              *ngIf="isStaff && nextStatus(reservation.status)"
               type="button"
               class="confirm-button"
               (click)="advanceReservation(reservation)"
             >
-              Pasar a {{ nextStatusLabel(reservation.status) }}
+              {{ nextActionLabel(reservation.status) }}
             </button>
 
             <button
@@ -217,7 +217,7 @@
               class="cancel-button"
               (click)="cancelReservation(reservation.id)"
             >
-              Cancelar
+              Cancelar reserva
             </button>
           </div>
         </article>

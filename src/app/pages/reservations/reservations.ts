@@ -25,6 +25,8 @@ import {
   Accommodation,
   CatalogApiService,
 } from '../../services/catalog-api.service';
+import { httpErrorMessage } from '../../shared/http-error';
+import { roleLabel } from '../../shared/labels';
 
 @Component({
   selector: 'app-reservations',
@@ -45,7 +47,10 @@ export class Reservations implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   reservations: ReservationResponse[] = [];
-  isAdmin = false;
+  /** ADMIN u OPERADOR (recepcionista): ven todas las reservas y cambian estados. */
+  isStaff = false;
+  /** Nombre amigable del rol: Administrador, Recepción o Cliente. */
+  roleLabel = roleLabel('CLIENTE');
   loading = false;
   saving = false;
   message = '';
@@ -79,7 +84,7 @@ export class Reservations implements OnInit {
       },
       error: () => {
         this.accommodations.set([]);
-        this.errorMessage = 'No fue posible cargar los alojamientos y sus precios. Intenta recargar la página.';
+        this.errorMessage = 'No pudimos cargar los alojamientos. Intenta nuevamente en unos minutos.';
         this.changeDetector.markForCheck();
       },
     });
@@ -138,7 +143,7 @@ export class Reservations implements OnInit {
       .subscribe({
         next: () => {
           this.changeDetector.markForCheck();
-          this.message = 'Reserva creada correctamente.';
+          this.message = 'Reserva creada. Puedes revisar su estado en la lista de reservas.';
           this.form = this.emptyForm();
           this.loadReservations();
         },
@@ -146,13 +151,13 @@ export class Reservations implements OnInit {
           this.changeDetector.markForCheck();
   if (error instanceof TimeoutError) {
     this.errorMessage =
-      'El servidor tardó demasiado en responder. Verifica que el BFF y el microservicio de reservas estén ejecutándose.';
+      'La solicitud está tardando más de lo normal. Revisa en unos minutos si la reserva quedó creada antes de intentarlo de nuevo.';
     return;
   }
 
   this.errorMessage = this.getErrorMessage(
     error as HttpErrorResponse,
-    'No fue posible crear la reserva.',
+    'No pudimos crear la reserva.',
   );
 },
       });
@@ -164,14 +169,15 @@ export class Reservations implements OnInit {
     this.bffApi.confirmReservation(id).subscribe({
       next: () => {
         this.changeDetector.markForCheck();
-        this.message = 'Reserva confirmada correctamente.';
+        this.message =
+          'Reserva confirmada. Enviaremos la confirmación al correo del huésped y prepararemos la habitación.';
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
         this.changeDetector.markForCheck();
         this.errorMessage = this.getErrorMessage(
           error,
-          'No fue posible confirmar la reserva.',
+          'No pudimos confirmar la reserva.',
         );
       },
     });
@@ -191,14 +197,14 @@ export class Reservations implements OnInit {
     this.bffApi.cancelReservation(id).subscribe({
       next: () => {
         this.changeDetector.markForCheck();
-        this.message = 'Reserva cancelada correctamente.';
+        this.message = 'Reserva cancelada.';
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
         this.changeDetector.markForCheck();
         this.errorMessage = this.getErrorMessage(
           error,
-          'No fue posible cancelar la reserva.',
+          'No pudimos cancelar la reserva.',
         );
       },
     });
@@ -236,6 +242,17 @@ export class Reservations implements OnInit {
     return next ? this.statusLabel(next) : '';
   }
 
+  /** Texto del botón para avanzar al siguiente estado. */
+  nextActionLabel(status: ReservationStatus): string {
+    const actions: Partial<Record<ReservationStatus, string>> = {
+      CONFIRMADA: 'Habilitar check-in',
+      CHECKIN_PENDIENTE: 'Registrar check-in',
+      EN_ESTADIA: 'Registrar checkout',
+    };
+
+    return actions[status] ?? '';
+  }
+
   canCancel(status: ReservationStatus): boolean {
     return (
       status === 'CREADA' ||
@@ -256,14 +273,14 @@ export class Reservations implements OnInit {
     this.bffApi.updateReservationStatus(reservation.id, next).subscribe({
       next: () => {
         this.changeDetector.markForCheck();
-        this.message = `Reserva #${reservation.id} actualizada a ${this.statusLabel(next)}.`;
+        this.message = `Reserva #${reservation.id} actualizada: ${this.statusLabel(next)}.`;
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
         this.changeDetector.markForCheck();
         this.errorMessage = this.getErrorMessage(
           error,
-          'No fue posible cambiar el estado de la reserva.',
+          'No pudimos actualizar el estado de la reserva.',
         );
       },
     });
@@ -275,7 +292,15 @@ export class Reservations implements OnInit {
     this.bffApi.getCurrentUser().subscribe({
       next: (user) => {
         this.changeDetector.markForCheck();
-        this.isAdmin = user.roles.includes('ADMIN');
+        this.isStaff =
+          user.roles.includes('ADMIN') || user.roles.includes('OPERADOR');
+        this.roleLabel = roleLabel(
+          user.roles.includes('ADMIN')
+            ? 'ADMIN'
+            : user.roles.includes('OPERADOR')
+              ? 'OPERADOR'
+              : 'CLIENTE',
+        );
         this.loadReservations();
       },
       error: (error: HttpErrorResponse) => {
@@ -283,7 +308,7 @@ export class Reservations implements OnInit {
         this.loading = false;
         this.errorMessage = this.getErrorMessage(
           error,
-          'No fue posible obtener el usuario autenticado.',
+          'No pudimos cargar tus datos de usuario.',
         );
       },
     });
@@ -292,7 +317,7 @@ export class Reservations implements OnInit {
   private loadReservations(): void {
     this.loading = true;
 
-    const request = this.isAdmin
+    const request = this.isStaff
       ? this.bffApi.getAllReservations()
       : this.bffApi.getMyReservations();
 
@@ -312,7 +337,7 @@ export class Reservations implements OnInit {
           this.changeDetector.markForCheck();
           this.errorMessage = this.getErrorMessage(
             error,
-            'No fue posible cargar las reservas.',
+            'No pudimos cargar las reservas.',
           );
         },
       });
@@ -358,19 +383,11 @@ export class Reservations implements OnInit {
     this.errorMessage = '';
   }
 
+  /** Usa el mismo traductor de errores que el resto de las pantallas. */
   private getErrorMessage(
     error: HttpErrorResponse,
     fallback: string,
   ): string {
-    if (typeof error.error === 'string') {
-      try {
-        const parsed = JSON.parse(error.error);
-        return parsed.detail ?? fallback;
-      } catch {
-        return error.error || fallback;
-      }
-    }
-
-    return error.error?.detail ?? fallback;
+    return httpErrorMessage(error, fallback);
   }
 }

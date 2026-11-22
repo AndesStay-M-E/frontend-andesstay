@@ -331,6 +331,14 @@
     color: #607088;
   }
 
+  // Nombres técnicos dentro del texto (colas, tópicos, grupos).
+  code {
+    padding: 1px 6px;
+    background: #eef4f8;
+    border-radius: 5px;
+    font-size: 0.9em;
+  }
+
   .link-button {
     padding: 0;
     color: #07877f;
