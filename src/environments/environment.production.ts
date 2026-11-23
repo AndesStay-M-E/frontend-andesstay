@@ -4,7 +4,7 @@ export const environment = {
 
   // URL de AWS API Gateway (HTTP API con JWT Authorizer) + "/api".
   // Si creas un API Gateway nuevo, cambia solo esta línea y vuelve a compilar.
-  apiUrl: 'https://rp7b03v3rd.execute-api.us-east-1.amazonaws.com/api',
+  apiUrl: 'https://2cpkx9rhvj.execute-api.us-east-1.amazonaws.com/api',
 
   azure: {
     clientId: 'bb7e20d0-d275-4c90-b5ec-99f072c756ce',
